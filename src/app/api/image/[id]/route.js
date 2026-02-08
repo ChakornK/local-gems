@@ -12,7 +12,7 @@ export async function GET(req, { params }) {
 
   try {
     await dbConnect();
-    const post = await Post.findById(id).populate("createdBy", "username").lean();
+    const post = await Post.findById(id).populate("createdBy", "name").lean();
 
     if (!post) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });

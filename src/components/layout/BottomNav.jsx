@@ -28,14 +28,14 @@ export default function BottomNav() {
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
           className="z-9999 fixed bottom-0 left-0 right-0 border-t border-white/10 bg-slate-900/80 px-6 pb-1 pt-1 backdrop-blur-xl"
         >
-          <div className="max-w-75 mx-auto flex items-center justify-between">
+          <div className="max-w-75 mx-auto flex items-center justify-between px-4">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
 
               if (item.primary) {
                 return (
-                  <Link key={item.label} href={item.href} className="group relative -top-10 flex flex-col items-center">
-                    <div className="rounded-full border-4 border-slate-900 bg-blue-500 p-4 shadow-lg shadow-blue-500/20 transition-transform group-active:scale-95">
+                  <Link key={item.label} href={item.href} className="group relative -top-4 flex flex-col items-center">
+                    <div className="rounded-full bg-blue-500 p-4 shadow-lg shadow-blue-500/20 transition-transform group-active:scale-95">
                       <Icon icon={`mingcute:${item.icon}-fill`} className="h-7 w-7 text-white" />
                     </div>
                   </Link>

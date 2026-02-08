@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const PostSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  title: String,
   description: String,
   image: String,
   lat: Number,

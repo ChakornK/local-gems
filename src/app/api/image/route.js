@@ -45,7 +45,7 @@ export async function GET(req) {
           .limit(50)
           .lean();
       },
-      60 * 30,
+      60,
     );
 
     return NextResponse.json(posts);
@@ -67,6 +67,7 @@ export async function POST(req) {
   const file = formData.get("image");
   const lat = parseFloat(formData.get("lat"));
   const lng = parseFloat(formData.get("lng"));
+  const title = formData.get("title");
   const description = formData.get("description");
 
   if (!file || isNaN(lat) || isNaN(lng)) {
@@ -88,6 +89,7 @@ export async function POST(req) {
       image: imageUrl,
       lat,
       lng,
+      title,
       description,
       createdBy: user._id,
     });

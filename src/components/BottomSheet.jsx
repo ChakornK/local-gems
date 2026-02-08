@@ -1,11 +1,17 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { createPortal } from "react-dom";
 
 export default function BottomSheet({ open, onClose, children }) {
-  if (typeof document === "undefined") return null;
+  const [mounted, setMounted] = useState(false);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
   const overlayVariants = {
     visible: { opacity: 1 },
     hidden: { opacity: 0 },
@@ -46,6 +52,6 @@ export default function BottomSheet({ open, onClose, children }) {
         </>
       )}
     </AnimatePresence>,
-    document.body,
+    document?.body,
   );
 }

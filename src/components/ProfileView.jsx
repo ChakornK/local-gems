@@ -323,7 +323,9 @@ export default function ProfileView({ isMine, userId }) {
                 />
                 <div className="bg-linear-to-t absolute inset-0 from-black/80 via-transparent to-transparent opacity-90" />
                 <div className="absolute bottom-3 left-3 right-3">
-                  <h3 className="truncate text-sm font-bold text-white">{post.description || "Untitled Gem"}</h3>
+                  <h3 className="truncate text-sm font-bold text-white">
+                    {post.title || post.description || "Untitled Gem"}
+                  </h3>
                   <div className="mt-1 flex items-center gap-1 text-xs text-slate-300">
                     <Icon icon="mingcute:heart-line" fontSize={14} />
                     <span>{post.likes}</span>

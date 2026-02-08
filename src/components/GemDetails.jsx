@@ -96,8 +96,19 @@ export default function GemDetails({ gemId, onClose }) {
             <div className="shrink-0 border-b border-slate-800 p-6 pb-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <h1 className="mb-1 text-2xl font-bold text-white">Local Gem</h1>
-                  <p className="text-sm text-slate-400">Posted by @{sign.createdBy?.username || "user"}</p>
+                  <h1 className="mb-1 text-2xl font-bold text-white">{sign.title || "Local Gem"}</h1>
+                  <p className="text-sm text-slate-400">
+                    Posted by{" "}
+                    <button
+                      onClick={() => {
+                        onClose();
+                        router.push(`/u/${sign.createdBy?._id}`);
+                      }}
+                      className="font-bold text-blue-400 hover:underline"
+                    >
+                      {sign.createdBy?.name ? sign.createdBy.name.split(" ")[0] : "an unknown user"}
+                    </button>
+                  </p>
                 </div>
                 <span className="rounded-full border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-400">
                   {new Date(sign.createdAt).toLocaleDateString()}
@@ -106,7 +117,7 @@ export default function GemDetails({ gemId, onClose }) {
             </div>
 
             {/* Description */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto px-6 py-2.5">
               <p className="text-base leading-relaxed text-slate-300">
                 {sign.description || "No description provided."}
               </p>

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 import GemDetails from "./GemDetails";
 import BottomSheet from "./BottomSheet";
+import ClusterList from "./ClusterList";
 
 const MapContainer = dynamic(async () => (await import("react-leaflet")).MapContainer, { ssr: false });
 const TileLayer = dynamic(async () => (await import("react-leaflet")).TileLayer, { ssr: false });
@@ -17,6 +18,9 @@ const Popup = dynamic(async () => (await import("react-leaflet")).Popup, {
   ssr: false,
 });
 const Circle = dynamic(async () => (await import("react-leaflet")).Circle, {
+  ssr: false,
+});
+const MarkerClusterGroup = dynamic(async () => (await import("@/components/GemClusterGroup")).default, {
   ssr: false,
 });
 
@@ -35,14 +39,9 @@ export default function LocalGemsMap({ initialGemId }) {
   const [gems, setGems] = useState([]);
   const [loadingGems, setLoadingGems] = useState(false);
 
-  const [addOpen, setAddOpen] = useState(false);
-  const [newNote, setNewNote] = useState("");
-  const [newPhoto, setNewPhoto] = useState(null);
-  const [savingGem, setSavingGem] = useState(false);
-
   const [selectedGemId, setSelectedGemId] = useState(initialGemId || null);
 
-  const route = useRouter();
+  const router = useRouter();
   const [mapStyle, setMapStyle] = useState("satellite"); // "satellite" | "standard"
 
   useEffect(() => {
@@ -51,21 +50,45 @@ export default function LocalGemsMap({ initialGemId }) {
     }
   }, [initialGemId]);
 
+  const [clusterGems, setClusterGems] = useState(null);
+  const [userIcon, setUserIcon] = useState(null);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     (async () => {
       const L = (await import("leaflet")).default;
 
-      const markerIcon2x = (await import("leaflet/dist/images/marker-icon-2x.png")).default;
-      const markerIcon = (await import("leaflet/dist/images/marker-icon.png")).default;
-      const markerShadow = (await import("leaflet/dist/images/marker-shadow.png")).default;
-
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: markerIcon2x.src ?? markerIcon2x,
-        iconUrl: markerIcon.src ?? markerIcon,
-        shadowUrl: markerShadow.src ?? markerShadow,
+      const customPin = L.divIcon({
+        html: `
+<div class="relative flex items-center justify-center text-blue-400" style="width: 40px; height: 48px;">
+  <svg viewBox="0 0 24 24" class="drop-shadow-black/50 absolute inset-0 h-full w-full drop-shadow" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="currentColor" />
+  </svg>
+  <div class="z-201 absolute left-1/2 top-[16px] flex h-[8px] w-[8px] -translate-x-1/2 items-center justify-center rounded-full bg-white"></div>
+</div>
+              `,
+        className: "custom-clustericon",
+        iconSize: L.point(40, 48),
+        iconAnchor: [20, 48],
       });
+
+      const redPin = L.divIcon({
+        html: `
+<div class="relative flex items-center justify-center text-blue-500" style="width: 40px; height: 48px;">
+  <svg viewBox="0 0 24 24" class="drop-shadow-black/50 absolute inset-0 h-full w-full drop-shadow" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="currentColor" />
+  </svg>
+  <div class="z-201 absolute left-1/2 top-[16px] flex h-[8px] w-[8px] -translate-x-1/2 items-center justify-center rounded-full bg-white"></div>
+</div>
+              `,
+        className: "custom-clustericon",
+        iconSize: L.point(40, 48),
+        iconAnchor: [20, 48],
+      });
+
+      L.Marker.prototype.options.icon = customPin;
+      setUserIcon(redPin);
     })();
   }, []);
 
@@ -96,22 +119,9 @@ export default function LocalGemsMap({ initialGemId }) {
     return location ? [location.lat, location.lng] : [49.2827, -123.1207]; // fallback (Vancouver)
   }, [location]);
 
-  async function appraiseGem(gemId) {
-    setGems((prev) => prev.map((g) => (g._id === gemId ? { ...g, appraisals: (g.appraisals || 0) + 1 } : g)));
-
-    try {
-      const res = await fetch(`/api/image/${gemId}/like`, {
-        method: "POST",
-      });
-      if (!res.ok) throw new Error("like failed");
-    } catch (e) {
-      setGems((prev) => prev.map((g) => (g.id === gemId ? { ...g, likes: Math.max(0, (g.appraisals || 1) - 1) } : g)));
-    }
-  }
-
-  async function submitNewGem() {
-    route.push("/takePhoto");
-  }
+  const routeTo = (path) => {
+    router.push(path, { scroll: false });
+  };
 
   return (
     <div className="relative h-screen w-full bg-white">
@@ -121,6 +131,7 @@ export default function LocalGemsMap({ initialGemId }) {
           key={!geolocationLoading ? "map-ready" : "map-loading"}
           center={center}
           zoom={15}
+          zoomControl={false}
           className="h-full w-full"
         >
           {mapStyle === "satellite" ? (
@@ -135,48 +146,37 @@ export default function LocalGemsMap({ initialGemId }) {
             />
           )}
 
-          {location && (
+          {location && userIcon && (
             <>
-              <Marker position={[location.lat, location.lng]}>
-                <Popup>You are here</Popup>
-              </Marker>
+              <Marker position={[location.lat, location.lng]} icon={userIcon} interactive={false}></Marker>
               <Circle center={[location.lat, location.lng]} radius={rangeMeters} />
             </>
           )}
 
-          {gems.map((g) => (
-            <Marker key={g._id} position={[g.lat, g.lng]}>
-              <Popup>
-                <div className="w-55 rounded-lg bg-slate-900 p-4">
-                  <div className="text-sm font-semibold text-white">Local Gem</div>
-
-                  {g.image ? (
-                    <img src={g.image} alt="Gem" className="mt-2 h-28 w-full rounded-lg object-cover" />
-                  ) : null}
-
-                  <p className="mt-2 text-sm text-slate-300">{g.note}</p>
-
-                  <div className="mt-3 flex items-end justify-start gap-4">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => appraiseGem(g._id)}
-                        className="rounded-full bg-blue-500 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-600"
-                      >
-                        Appraise
-                      </button>
-                      <button
-                        onClick={() => route.push(`/gem/${g._id}`)}
-                        className="rounded-full border border-slate-600 bg-slate-700 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-slate-600"
-                      >
-                        Detail
-                      </button>
-                    </div>
-                    <div className="whitespace-nowrap pb-2 text-xs text-slate-400">{g.appraisals || 0} likes</div>
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+          <MarkerClusterGroup
+            chunkedLoading
+            maxClusterRadius={60}
+            spiderfyOnMaxZoom={false}
+            showCoverageOnHover={false}
+            zoomToBoundsOnClick={false}
+            onClusterClick={(cluster) => {
+              const markers = cluster.layer.getAllChildMarkers();
+              const gemIds = markers.map((m) => m.options.gemId);
+              const selectedGems = gems.filter((g) => gemIds.includes(g._id));
+              setClusterGems(selectedGems);
+            }}
+          >
+            {gems.map((g) => (
+              <Marker
+                key={g._id}
+                position={[g.lat, g.lng]}
+                gemId={g._id}
+                eventHandlers={{
+                  click: () => routeTo(`/gem/${g._id}`),
+                }}
+              />
+            ))}
+          </MarkerClusterGroup>
         </MapContainer>
       </div>
 
@@ -206,136 +206,124 @@ export default function LocalGemsMap({ initialGemId }) {
         </div>
       </div>
 
-      {/* Settings modal */}
-      {settingsOpen && (
-        <div className="z-2000 absolute inset-0 bg-black/30 p-4">
-          <div className="mx-auto mt-20 w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
-            <div className="flex items-center justify-between">
-              <div className="text-lg font-semibold text-gray-900">Settings</div>
-              <button onClick={() => setSettingsOpen(false)} className="rounded-full p-2 hover:bg-gray-100">
-                ✕
-              </button>
-            </div>
-            <div className="mt-4">
-              <div className="text-sm font-medium text-gray-900">Map Style</div>
+      {/* Settings BottomSheet */}
+      <BottomSheet open={settingsOpen} onClose={() => setSettingsOpen(false)}>
+        <div className="flex h-full flex-col overflow-hidden bg-slate-900 p-6 text-white">
+          <div className="flex items-center justify-between pb-4">
+            <h2 className="text-xl font-bold">Settings</h2>
+            <button
+              onClick={() => setSettingsOpen(false)}
+              className="rounded-full bg-slate-800 p-2 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
+            >
+              <Icon icon="mingcute:close-line" fontSize={24} />
+            </button>
+          </div>
 
-              <div className="mt-2 grid grid-cols-2 gap-2">
+          <div className="flex-1 space-y-8 overflow-y-auto py-4">
+            {/* Map Style */}
+            <section>
+              <div className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
+                <Icon icon="mingcute:layers-line" fontSize={18} />
+                Map Style
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setMapStyle("standard")}
-                  className={
-                    "rounded-xl px-3 py-2 text-sm font-medium ring-1 transition " +
-                    (mapStyle === "standard"
-                      ? "bg-slate-900 text-white ring-slate-900"
-                      : "bg-white text-slate-900 ring-gray-200 hover:bg-gray-50")
-                  }
+                  className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all ${
+                    mapStyle === "standard"
+                      ? "border-blue-500 bg-blue-500/10 text-blue-400"
+                      : "border-slate-800 bg-slate-800/50 text-slate-400 hover:border-slate-700 hover:bg-slate-800"
+                  }`}
                 >
-                  Standard
+                  <Icon icon="mingcute:map-2-line" fontSize={32} />
+                  <span className="text-sm font-medium">Standard</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setMapStyle("satellite")}
-                  className={
-                    "rounded-xl px-3 py-2 text-sm font-medium ring-1 transition " +
-                    (mapStyle === "satellite"
-                      ? "bg-slate-900 text-white ring-slate-900"
-                      : "bg-white text-slate-900 ring-gray-200 hover:bg-gray-50")
-                  }
+                  className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all ${
+                    mapStyle === "satellite"
+                      ? "border-blue-500 bg-blue-500/10 text-blue-400"
+                      : "border-slate-800 bg-slate-800/50 text-slate-400 hover:border-slate-700 hover:bg-slate-800"
+                  }`}
                 >
-                  Satellite
+                  <Icon icon="mingcute:earth-line" fontSize={32} />
+                  <span className="text-sm font-medium">Satellite</span>
                 </button>
               </div>
-            </div>
-            <div className="mt-4">
-              <div className="text-sm font-medium text-gray-900">Detection Range</div>
-              <div className="mt-1 text-sm text-gray-500">{metersLabel(rangeMeters)}</div>
+            </section>
 
-              <input
-                className="mt-4 w-full"
-                type="range"
-                min={100}
-                max={10000}
-                step={100}
-                value={rangeMeters}
-                onChange={(e) => setRangeMeters(Number(e.target.value))}
-              />
-
-              <div className="mt-2 flex justify-between text-xs text-gray-500">
-                <span>100m</span>
-                <span>10km</span>
+            {/* Detection Range */}
+            <section>
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
+                  <Icon icon="mingcute:radar-line" fontSize={18} />
+                  Detection Range
+                </div>
+                <span className="rounded-full bg-blue-500/10 px-3 py-1 text-sm font-bold text-blue-400 ring-1 ring-blue-500/20">
+                  {metersLabel(rangeMeters)}
+                </span>
               </div>
-            </div>
 
-            <button
-              onClick={() => setSettingsOpen(false)}
-              className="mt-5 w-full rounded-xl bg-gray-900 py-2.5 text-sm font-medium text-white hover:bg-black"
-            >
-              Done
-            </button>
+              <div className="px-2">
+                <input
+                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-800 accent-blue-500"
+                  type="range"
+                  min={100}
+                  max={10000}
+                  step={100}
+                  value={rangeMeters}
+                  onChange={(e) => setRangeMeters(Number(e.target.value))}
+                />
+                <div className="mt-4 flex justify-between text-xs font-medium text-slate-500">
+                  <span>100m</span>
+                  <span>5km</span>
+                  <span>10km</span>
+                </div>
+              </div>
+            </section>
           </div>
+
+          <button
+            onClick={() => setSettingsOpen(false)}
+            className="mt-6 w-full rounded-2xl bg-blue-500 py-4 text-lg font-bold text-white shadow-lg shadow-blue-500/20 transition-transform hover:bg-blue-600 active:scale-[0.98]"
+          >
+            Done
+          </button>
         </div>
-      )}
+      </BottomSheet>
 
-      {/* Add modal */}
-      {addOpen && (
-        <div className="z-2000 absolute inset-0 bg-black/30 p-4">
-          <div className="mx-auto mt-16 w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
-            <div className="flex items-center justify-between">
-              <div className="text-lg font-semibold text-gray-900">Add a Local Gem</div>
-              <button onClick={() => setAddOpen(false)} className="rounded-full p-2 hover:bg-gray-100">
-                ✕
-              </button>
-            </div>
-
-            <div className="mt-4">
-              <label className="text-sm font-medium text-gray-900">Note</label>
-              <textarea
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                placeholder="What makes this spot special?"
-                className="mt-2 w-full rounded-xl border border-gray-200 p-3 text-sm outline-none focus:border-gray-400"
-                rows={4}
-              />
-            </div>
-
-            <div className="mt-4">
-              <label className="text-sm font-medium text-gray-900">Photo (optional)</label>
-              <input
-                type="file"
-                accept="image/*"
-                className="mt-2 w-full text-sm"
-                onChange={(e) => setNewPhoto(e.target.files?.[0] ?? null)}
-              />
-            </div>
-
-            <button
-              onClick={submitNewGem}
-              disabled={savingGem || !location || !newNote.trim()}
-              className="mt-5 w-full rounded-xl bg-gray-900 py-2.5 text-sm font-medium text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {savingGem ? "Posting..." : "Post Gem"}
-            </button>
-
-            {!location && <div className="mt-3 text-xs text-gray-500">Location is required to post a gem.</div>}
-          </div>
-        </div>
-      )}
       {/* Internal Bottom Sheet for Direct Route /gem/[id] */}
       <BottomSheet
         open={!!selectedGemId}
         onClose={() => {
           setSelectedGemId(null);
-          route.push("/");
+          router.push("/", { scroll: false });
         }}
       >
         <GemDetails
           gemId={selectedGemId}
           onClose={() => {
             setSelectedGemId(null);
-            route.push("/");
+            router.push("/", { scroll: false });
           }}
         />
+      </BottomSheet>
+
+      {/* Cluster List BottomSheet */}
+      <BottomSheet open={!!clusterGems} onClose={() => setClusterGems(null)}>
+        {clusterGems && (
+          <ClusterList
+            gems={clusterGems}
+            onClose={() => setClusterGems(null)}
+            onGemClick={(gem) => {
+              setClusterGems(null);
+              routeTo(`/gem/${gem._id}`);
+            }}
+          />
+        )}
       </BottomSheet>
     </div>
   );
