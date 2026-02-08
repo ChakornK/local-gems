@@ -11,7 +11,7 @@ export default function GemModal({ params }) {
 
   return (
     <BottomSheet open={true} onClose={() => router.back()}>
-      <GemDetails gemId={id} onClose={() => router.back()} />
+      <GemDetails gemId={id} onClose={(path) => (path ? router.push(path) : router.back())} />
     </BottomSheet>
   );
 }

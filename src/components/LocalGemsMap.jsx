@@ -127,10 +127,6 @@ export default function LocalGemsMap({ initialGemId }) {
     return location ? [location.lat, location.lng] : [49.2827, -123.1207]; // fallback (Vancouver)
   }, [location]);
 
-  const routeTo = (path) => {
-    router.push(path, { scroll: false });
-  };
-
   return (
     <div className="relative h-screen w-full bg-white">
       {/* Map */}
@@ -180,7 +176,7 @@ export default function LocalGemsMap({ initialGemId }) {
                 position={[g.lat, g.lng]}
                 gemId={g._id}
                 eventHandlers={{
-                  click: () => routeTo(`/gem/${g._id}`),
+                  click: () => setSelectedGemId(g._id),
                 }}
               />
             ))}
@@ -313,9 +309,9 @@ export default function LocalGemsMap({ initialGemId }) {
       >
         <GemDetails
           gemId={selectedGemId}
-          onClose={() => {
+          onClose={(path) => {
             setSelectedGemId(null);
-            router.push("/", { scroll: false });
+            router.push(path || "/", { scroll: false });
           }}
         />
       </BottomSheet>
@@ -328,7 +324,7 @@ export default function LocalGemsMap({ initialGemId }) {
             onClose={() => setClusterGems(null)}
             onGemClick={(gem) => {
               setClusterGems(null);
-              routeTo(`/gem/${gem._id}`);
+              setSelectedGemId(gem._id);
             }}
           />
         )}

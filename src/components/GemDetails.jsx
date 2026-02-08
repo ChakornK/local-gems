@@ -46,9 +46,11 @@ export default function GemDetails({ gemId, onClose }) {
     }
   }
 
-  const handleClose = () => {
+  const handleClose = (path) => {
     if (onClose) {
-      onClose();
+      onClose(typeof path === "string" ? path : null);
+    } else if (typeof path === "string") {
+      router.push(path);
     } else {
       router.back();
     }
@@ -101,8 +103,7 @@ export default function GemDetails({ gemId, onClose }) {
                     Posted by{" "}
                     <button
                       onClick={() => {
-                        onClose();
-                        router.push(`/u/${sign.createdBy?._id}`);
+                        handleClose(`/u/${sign.createdBy?._id}`);
                       }}
                       className="font-bold text-blue-400 hover:underline"
                     >
