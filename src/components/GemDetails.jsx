@@ -96,7 +96,7 @@ export default function GemDetails({ gemId, onClose }) {
             <div className="shrink-0 border-b border-slate-800 p-6 pb-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <h1 className="mb-1 text-2xl font-bold text-white">Local Gem</h1>
+                  <h1 className="mb-1 text-2xl font-bold text-white">{sign.title || "Local Gem"}</h1>
                   <p className="text-sm text-slate-400">Posted by @{sign.createdBy?.username || "user"}</p>
                 </div>
                 <span className="rounded-full border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-400">

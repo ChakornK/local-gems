@@ -50,8 +50,10 @@ export default function ClusterList({ gems, onGemClick, onClose }) {
             <div className="min-w-0 flex-1">
               <div className="mb-1 flex items-center gap-2">
                 <h3 className="truncate text-base font-bold text-white">
-                  {gem.description ? gem.description.substring(0, 30) : "Local Gem"}
-                  {gem.description?.length > 30 ? "..." : ""}
+                  {gem.title ||
+                    (gem.description
+                      ? gem.description.substring(0, 30) + (gem.description.length > 30 ? "..." : "")
+                      : "Local Gem")}
                 </h3>
               </div>
               <p className="line-clamp-2 text-sm leading-snug text-slate-400">
