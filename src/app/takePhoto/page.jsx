@@ -1,7 +1,13 @@
 "use client";
 
 import { useGeolocation } from "@/context/GeolocationContext";
-import { Stage, Layer, Text, Image as KonvaImage } from "react-konva";
+import {
+  Stage,
+  Layer,
+  Text,
+  Image as KonvaImage,
+  Transformer,
+} from "react-konva";
 import { useRef, useState, useEffect, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import useImage from "use-image";
@@ -96,7 +102,17 @@ export default function CameraWithEditor() {
         sourceY = (video.videoHeight - sourceHeight) / 2;
       }
 
-      context.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight);
+      context.drawImage(
+        video,
+        sourceX,
+        sourceY,
+        sourceWidth,
+        sourceHeight,
+        0,
+        0,
+        videoDimensions.width,
+        videoDimensions.height,
+      );
 
       // Save the image to state
       const data = canvas.toDataURL("image/png");
@@ -283,7 +299,7 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
     }
   };
 
-  const handlePost = () => {
+  const handleDownload = () => {
     finishEditingText();
     setTimeout(() => {
       const uri = stageRef.current.toDataURL();
@@ -294,7 +310,7 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
     }, 0);
   };
 
-  function uploadImage() {
+  function handleUploadImage() {
     finishEditingText();
     if (loading) alert("Please wait for geolocation to load.");
     setTimeout(() => {
@@ -593,7 +609,7 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
           +
         </button>
         <button
-          onClick={uploadImage}
+          onClick={handleUploadImage}
           className="flex items-center justify-center gap-2 rounded-full bg-slate-600 px-4 py-2 text-slate-50 opacity-70 transition hover:bg-slate-700 hover:opacity-100"
           title="Post"
         >

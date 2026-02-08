@@ -4,8 +4,9 @@ import Post from "@/models/Post";
 import { NextResponse } from "next/server";
 import { uploadToS3 } from "@/lib/s3";
 
-import { cacheData, getUser } from "@/lib/redisAdapter";
+import { cacheData } from "@/lib/redisAdapter";
 import { MAX_POSTS_RADIUS } from "@/models/Post";
+import User from "@/models/User";
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
@@ -28,8 +29,7 @@ export async function GET(req) {
   // Round coordinates to ~110m precision (3 decimal places) for caching "similar" locations
   const cacheKey = `posts:nearby:${lat.toFixed(3)}:${lng.toFixed(3)}`;
 
-  // const radius = Math.min(radiusMeters, MAX_POSTS_RADIUS);
-  const radius = 1000000;
+  const radius = Math.min(radiusMeters, MAX_POSTS_RADIUS);
   try {
     const posts = await cacheData(
       cacheKey,
@@ -65,7 +65,8 @@ export async function POST(req) {
   const s = await session();
   if (!s) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const user = await getUser(s.session.userId);
+  await dbConnect();
+  const user = await User.findCached(s.session.userId);
   if (!user)
     return NextResponse.json({ error: "User not found" }, { status: 404 });
 
