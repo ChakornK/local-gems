@@ -5,6 +5,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { Icon } from "@iconify/react";
 import BottomSheet from "./BottomSheet";
+import { useRouter } from "next/navigation";
 
 const emojis = {
   person: "👤",
@@ -44,6 +45,7 @@ const emojis = {
 };
 
 export default function ProfileView({ isMine }) {
+  const router = useRouter();
   const [selectedEmoji, setSelectedEmoji] = useState(Object.keys(emojis)[0]);
   const [isEmojiSelectorOpen, setIsEmojiSelectorOpen] = useState(false);
 
@@ -83,6 +85,9 @@ export default function ProfileView({ isMine }) {
       likes: 210,
     },
   ];
+
+  const [editing, setEditing] = useState(false);
+  const [bio, setBio] = useState(user.bio || "");
 
   return (
     <div className="min-h-screen w-full bg-slate-900 pb-20">
@@ -144,7 +149,43 @@ export default function ProfileView({ isMine }) {
           <h1 className="text-2xl font-bold text-white">{user.name}</h1>
         </div>
 
-        <p className="mt-4 leading-relaxed text-slate-300">{user.bio}</p>
+        <div className="mt-4 text-slate-300">
+          <div className="flex items-center gap-2">
+            {!editing && (
+              <>
+                <p className="leading-relaxed">{bio}</p>
+                <button onClick={() => setEditing(true)}>
+                  <Icon icon="mingcute:edit-2-line" fontSize={16} />
+                </button>
+              </>
+            )}
+
+            {editing && (
+              <>
+                <input
+                  className="border border-slate-700 bg-transparent px-2 py-1"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                />
+                <button
+                  onClick={() => {
+                    setEditing(false);
+                  }}
+                >
+                  <Icon icon="mingcute:save-2-line" fontSize={16} />
+                </button>
+                <button
+                  onClick={() => {
+                    setEditing(false);
+                    setBio(user.bio);
+                  }}
+                >
+                  <Icon icon="mingcute:close-line" fontSize={16} />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
 
         {/* Stats Row */}
         <div className="mt-6 flex gap-6 border-y border-slate-800 py-4">
