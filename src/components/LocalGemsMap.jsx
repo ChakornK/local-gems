@@ -35,14 +35,9 @@ export default function LocalGemsMap({ initialGemId }) {
   const [gems, setGems] = useState([]);
   const [loadingGems, setLoadingGems] = useState(false);
 
-  const [addOpen, setAddOpen] = useState(false);
-  const [newNote, setNewNote] = useState("");
-  const [newPhoto, setNewPhoto] = useState(null);
-  const [savingGem, setSavingGem] = useState(false);
-
   const [selectedGemId, setSelectedGemId] = useState(initialGemId || null);
 
-  const route = useRouter();
+  const router = useRouter();
   const [mapStyle, setMapStyle] = useState("satellite"); // "satellite" | "standard"
 
   useEffect(() => {
@@ -96,22 +91,9 @@ export default function LocalGemsMap({ initialGemId }) {
     return location ? [location.lat, location.lng] : [49.2827, -123.1207]; // fallback (Vancouver)
   }, [location]);
 
-  async function appraiseGem(gemId) {
-    setGems((prev) => prev.map((g) => (g._id === gemId ? { ...g, appraisals: (g.appraisals || 0) + 1 } : g)));
-
-    try {
-      const res = await fetch(`/api/image/${gemId}/like`, {
-        method: "POST",
-      });
-      if (!res.ok) throw new Error("like failed");
-    } catch (e) {
-      setGems((prev) => prev.map((g) => (g.id === gemId ? { ...g, likes: Math.max(0, (g.appraisals || 1) - 1) } : g)));
-    }
-  }
-
-  async function submitNewGem() {
-    route.push("/takePhoto");
-  }
+  const routeTo = (path) => {
+    router.push(path, { scroll: false });
+  };
 
   return (
     <div className="relative h-screen w-full bg-white">
@@ -145,37 +127,13 @@ export default function LocalGemsMap({ initialGemId }) {
           )}
 
           {gems.map((g) => (
-            <Marker key={g._id} position={[g.lat, g.lng]}>
-              <Popup>
-                <div className="w-55 rounded-lg bg-slate-900 p-4">
-                  <div className="text-sm font-semibold text-white">Local Gem</div>
-
-                  {g.image ? (
-                    <img src={g.image} alt="Gem" className="mt-2 h-28 w-full rounded-lg object-cover" />
-                  ) : null}
-
-                  <p className="mt-2 text-sm text-slate-300">{g.note}</p>
-
-                  <div className="mt-3 flex items-end justify-start gap-4">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => appraiseGem(g._id)}
-                        className="rounded-full bg-blue-500 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-600"
-                      >
-                        Appraise
-                      </button>
-                      <button
-                        onClick={() => route.push(`/gem/${g._id}`)}
-                        className="rounded-full border border-slate-600 bg-slate-700 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-slate-600"
-                      >
-                        Detail
-                      </button>
-                    </div>
-                    <div className="whitespace-nowrap pb-2 text-xs text-slate-400">{g.appraisals || 0} likes</div>
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
+            <Marker
+              key={g._id}
+              position={[g.lat, g.lng]}
+              eventHandlers={{
+                click: () => routeTo(`/gem/${g._id}`),
+              }}
+            />
           ))}
         </MapContainer>
       </div>
@@ -277,63 +235,19 @@ export default function LocalGemsMap({ initialGemId }) {
         </div>
       )}
 
-      {/* Add modal */}
-      {addOpen && (
-        <div className="z-2000 absolute inset-0 bg-black/30 p-4">
-          <div className="mx-auto mt-16 w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
-            <div className="flex items-center justify-between">
-              <div className="text-lg font-semibold text-gray-900">Add a Local Gem</div>
-              <button onClick={() => setAddOpen(false)} className="rounded-full p-2 hover:bg-gray-100">
-                ✕
-              </button>
-            </div>
-
-            <div className="mt-4">
-              <label className="text-sm font-medium text-gray-900">Note</label>
-              <textarea
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                placeholder="What makes this spot special?"
-                className="mt-2 w-full rounded-xl border border-gray-200 p-3 text-sm outline-none focus:border-gray-400"
-                rows={4}
-              />
-            </div>
-
-            <div className="mt-4">
-              <label className="text-sm font-medium text-gray-900">Photo (optional)</label>
-              <input
-                type="file"
-                accept="image/*"
-                className="mt-2 w-full text-sm"
-                onChange={(e) => setNewPhoto(e.target.files?.[0] ?? null)}
-              />
-            </div>
-
-            <button
-              onClick={submitNewGem}
-              disabled={savingGem || !location || !newNote.trim()}
-              className="mt-5 w-full rounded-xl bg-gray-900 py-2.5 text-sm font-medium text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {savingGem ? "Posting..." : "Post Gem"}
-            </button>
-
-            {!location && <div className="mt-3 text-xs text-gray-500">Location is required to post a gem.</div>}
-          </div>
-        </div>
-      )}
       {/* Internal Bottom Sheet for Direct Route /gem/[id] */}
       <BottomSheet
         open={!!selectedGemId}
         onClose={() => {
           setSelectedGemId(null);
-          route.push("/");
+          router.push("/", { scroll: false });
         }}
       >
         <GemDetails
           gemId={selectedGemId}
           onClose={() => {
             setSelectedGemId(null);
-            route.push("/");
+            router.push("/", { scroll: false });
           }}
         />
       </BottomSheet>
