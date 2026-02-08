@@ -22,6 +22,7 @@ export default function CameraWithEditor() {
   // --- CAMERA LOGIC ---
   const stopStreams = () => {
     try {
+      if (!videoStream) return;
       videoStream.getTracks().forEach((t) => t.stop());
     } catch {}
   };
@@ -43,15 +44,11 @@ export default function CameraWithEditor() {
           : {
               video: {
                 facingMode: "environment",
-                width: { ideal: 1080 },
-                height: { ideal: 1920 },
               },
             },
       );
-      if (videoRef.current) {
-        stopStreams();
-        setVideoStream(stream);
-      }
+      stopStreams();
+      setVideoStream(stream);
     } catch (err) {
       console.error(`Camera Error: ${err.message}`);
     }
