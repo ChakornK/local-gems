@@ -4,6 +4,7 @@ import { useState, use, useEffect } from "react";
 import { ArrowLeft, ChevronUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { Icon } from "@iconify/react";
 
 export default function SignDetailsPage({ params }) {
   const router = useRouter();
@@ -85,7 +86,7 @@ export default function SignDetailsPage({ params }) {
           onClick={() => router.back()}
           className="rounded-full p-2 text-white transition-colors hover:bg-white/10"
         >
-          <ArrowLeft size={20} />
+          <Icon icon="mingcute:arrow-left-line" fontSize={20} />
         </button>
 
         <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-sm font-normal uppercase tracking-widest text-white">
@@ -105,14 +106,6 @@ export default function SignDetailsPage({ params }) {
           ${heights.text}relative z-10 -mt-6 flex w-full flex-col rounded-t-3xl bg-slate-900 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] transition-all duration-500 ease-in-out
         `}
       >
-        {/* Arrow Protrusion */}
-        <button
-          onClick={() => setIsTextFocused((prev) => !prev)}
-          className="absolute -top-4 left-1/2 flex h-10 w-10 -translate-x-1/2 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-slate-300 transition-all hover:bg-slate-700"
-        >
-          <ChevronUp size={18} className={`transition-transform duration-300 ${isTextFocused ? "rotate-180" : ""}`} />
-        </button>
-
         {/* Header */}
         <div className="border-b border-slate-800 p-6 pb-4">
           <div className="flex items-start justify-between">

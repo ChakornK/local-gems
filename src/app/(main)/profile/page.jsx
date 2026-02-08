@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 
-import { MapPin, Heart, Share2 } from "lucide-react";
 import Image from "next/image";
-import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Icon } from "@iconify/react";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -90,15 +89,15 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen w-full bg-slate-900 pb-20">
       {/* Topic Bar */}
-      <div className="relative z-20 flex w-full items-center justify-center border-b border-white/10 bg-white/5 py-4 backdrop-blur-md">
+      {/* <div className="relative z-20 flex w-full items-center justify-center border-b border-white/10 bg-white/5 py-4 backdrop-blur-md">
         <button
           onClick={() => router.back()}
           className="absolute left-4 rounded-full p-2 text-white transition-colors hover:bg-white/10"
         >
-          <ArrowLeft size={20} />
+          <Icon icon="mingcute:arrow-left-line" fontSize={20} />
         </button>
         <span className="text-sm font-normal uppercase tracking-widest text-white">User Profile</span>
-      </div>
+      </div> */}
 
       {/* Header / Cover Area */}
       <div className="relative h-48 bg-slate-900">
@@ -195,7 +194,7 @@ export default function ProfilePage() {
               <div className="absolute bottom-3 left-3 right-3">
                 <h3 className="truncate text-sm font-bold text-white">{post.title}</h3>
                 <div className="mt-1 flex items-center gap-1 text-xs text-slate-300">
-                  <Heart size={12} className="fill-current" />
+                  <Icon icon="mingcute:heart-line" fontSize={14} />
                   <span>{post.likes}</span>
                 </div>
               </div>

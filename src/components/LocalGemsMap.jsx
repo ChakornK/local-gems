@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useGeolocation } from "@/context/GeolocationContext";
 import { useRouter } from "next/navigation";
-import { Settings } from "lucide-react";
+import { Icon } from "@iconify/react";
 
 const MapContainer = dynamic(async () => (await import("react-leaflet")).MapContainer, { ssr: false });
 const TileLayer = dynamic(async () => (await import("react-leaflet")).TileLayer, { ssr: false });
@@ -177,7 +177,7 @@ export default function LocalGemsMap() {
         aria-label="Settings"
         title="Settings"
       >
-        <Settings size={20} />
+        <Icon icon="mingcute:settings-3-line" fontSize={20} />
       </button>
 
       {/* Location stat */}
