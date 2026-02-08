@@ -1,42 +1,79 @@
 "use client";
 
 import { useGeolocation } from "@/context/GeolocationContext";
-import { useRef, useState } from "react";
 import { Stage, Layer, Text, Image as KonvaImage, Rect } from "react-konva";
+import React, { useRef, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Stage,
+  Layer,
+  Text,
+  Image as KonvaImage,
+  Rect,
+  Transformer,
+} from "react-konva";
 import useImage from "use-image";
 
 export default function CameraWithEditor() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const router = useRouter();
 
   // State to hold the captured image data URL
   const [capturedImage, setCapturedImage] = useState(null);
   const [videoDimensions, setVideoDimensions] = useState({
-    width: 600,
-    height: 0,
+    width: 360,
+    height: 640,
   });
+  const [cameraRunning, setCameraRunning] = useState(false);
 
   // --- CAMERA LOGIC ---
   function givePermission() {
     navigator.mediaDevices
-      .getUserMedia({ video: true, audio: false })
+      .getUserMedia({
+        video: {
+          width: { ideal: 4096 },
+          height: { ideal: 4096 },
+        },
+        audio: false,
+      })
       .then((stream) => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.play();
+          setCameraRunning(true);
         }
       })
       .catch((err) => console.error(`Error: ${err}`));
   }
 
+  // Auto-request camera permission on mount
+  useEffect(() => {
+    givePermission();
+  }, []);
+
   function handleCanPlay() {
     if (videoRef.current) {
-      const aspectRatio =
-        videoRef.current.videoHeight / videoRef.current.videoWidth;
-      setVideoDimensions({
-        ...videoDimensions,
-        height: videoDimensions.width * aspectRatio,
-      });
+      // Get the actual video dimensions from the camera
+      const videoWidth = videoRef.current.videoWidth;
+      const videoHeight = videoRef.current.videoHeight;
+
+      // Calculate maximum dimensions maintaining 9:16 aspect ratio
+      const videoAspectRatio = videoWidth / videoHeight;
+      const targetAspectRatio = 9 / 16;
+      let width, height;
+
+      if (videoAspectRatio > targetAspectRatio) {
+        // Video is wider than 9:16, use full height
+        height = videoHeight;
+        width = Math.floor(height * targetAspectRatio);
+      } else {
+        // Video is taller than 9:16, use full width
+        width = videoWidth;
+        height = Math.floor(width / targetAspectRatio);
+      }
+
+      setVideoDimensions({ width, height });
     }
   }
 
@@ -48,13 +85,26 @@ export default function CameraWithEditor() {
     if (videoDimensions.width && videoDimensions.height) {
       canvas.width = videoDimensions.width;
       canvas.height = videoDimensions.height;
-      context.drawImage(
-        video,
-        0,
-        0,
-        videoDimensions.width,
-        videoDimensions.height,
-      );
+
+      // Calculate crop to maintain 9:16 aspect ratio
+      const videoAspectRatio = video.videoWidth / video.videoHeight;
+      const targetAspectRatio = 9 / 16;
+      let sourceX = 0,
+        sourceY = 0,
+        sourceWidth = video.videoWidth,
+        sourceHeight = video.videoHeight;
+
+      if (videoAspectRatio > targetAspectRatio) {
+        // Video is wider, crop sides
+        sourceWidth = video.videoHeight * targetAspectRatio;
+        sourceX = (video.videoWidth - sourceWidth) / 2;
+      } else {
+        // Video is taller, crop top/bottom
+        sourceHeight = video.videoWidth / targetAspectRatio;
+        sourceY = (video.videoHeight - sourceHeight) / 2;
+      }
+
+      context.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight);
 
       // Save the image to state
       const data = canvas.toDataURL("image/png");
@@ -64,34 +114,39 @@ export default function CameraWithEditor() {
       const stream = video.srcObject;
       const tracks = stream.getTracks();
       tracks.forEach((track) => track.stop());
+      setCameraRunning(false);
     }
   }
 
   // --- RENDERING LOGIC ---
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-black text-white">
+    <div className="relative flex h-screen w-screen flex-col overflow-hidden bg-slate-950 text-slate-50">
       {!capturedImage ? (
-        <div className="flex h-full flex-col items-center justify-center gap-4 bg-black p-4">
+        <div className="relative flex h-full w-full flex-col items-center justify-center bg-slate-950">
           <video
             ref={videoRef}
             onCanPlay={handleCanPlay}
-            className="mb-4 rounded-lg"
-            style={{ width: videoDimensions.width, maxHeight: "60vh" }}
+            className="absolute inset-0 h-full w-full object-cover"
           />
-          <div className="flex gap-3">
-            <button
-              onClick={givePermission}
-              className="rounded-lg bg-blue-500 px-6 py-2 font-semibold text-white transition hover:bg-blue-600"
-            >
-              Start Camera
-            </button>
-            <button
-              onClick={capturePicture}
-              className="rounded-lg bg-blue-500 px-6 py-2 font-semibold text-white transition hover:bg-blue-600"
-            >
-              Take Photo
-            </button>
-          </div>
+          <button
+            onClick={() => router.push("/components/")}
+            className="absolute left-4 top-4 z-10 flex h-10 w-10 items-center justify-center text-2xl font-bold text-white transition hover:opacity-70"
+            title="Back"
+          >
+            ✕
+          </button>
+          <button
+            onClick={givePermission}
+            style={{ display: cameraRunning ? "none" : "flex" }}
+            className="absolute right-4 top-4 z-10 rounded-lg bg-slate-600 px-4 py-2 font-semibold text-slate-50 transition hover:bg-slate-700"
+          >
+            Start Camera
+          </button>
+          <button
+            onClick={capturePicture}
+            className="absolute bottom-8 left-1/2 z-10 flex h-24 w-24 -translate-x-1/2 transform items-center justify-center rounded-full border-4 border-white bg-white transition hover:bg-slate-100"
+            title="Take Photo"
+          ></button>
           <canvas ref={canvasRef} style={{ display: "none" }} />
         </div>
       ) : (
@@ -112,9 +167,25 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
   const [activeTextId, setActiveTextId] = useState(null);
   const [editingText, setEditingText] = useState("");
   const [editInputPos, setEditInputPos] = useState({ x: 0, y: 0 });
+  const [selectedTextId, setSelectedTextId] = useState(null);
   const [image] = useImage(imageUrl);
   const stageContainerRef = useRef(null);
   const inputRef = useRef(null);
+  const textRefs = useRef({});
+  const transformerRefs = useRef({});
+
+  useEffect(() => {
+    if (
+      selectedTextId &&
+      transformerRefs.current[selectedTextId] &&
+      textRefs.current[selectedTextId]
+    ) {
+      const textNode = textRefs.current[selectedTextId];
+      const transformer = transformerRefs.current[selectedTextId];
+      transformer.nodes([textNode]);
+      transformer.getLayer().batchDraw();
+    }
+  }, [selectedTextId]);
 
   const { location, loading, error } = useGeolocation();
 
@@ -130,6 +201,11 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
         text: "",
         x: x,
         y: y,
+        scaleX: 1,
+        scaleY: 1,
+        rotation: 0,
+        fontSize: 48,
+        textColor: "white",
         finalized: false,
       },
     ]);
@@ -137,21 +213,22 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
   };
 
   const handleCanvasClick = (e) => {
-    if (activeTextId === null) {
-      const stage = stageRef.current;
-      const pointerPos = stage.getPointerPosition();
-      addTextAtPosition(pointerPos.x, pointerPos.y);
-    }
+    // Only used for selecting/deselecting, not for adding text
+    setSelectedTextId(null);
   };
 
   const finishEditingText = () => {
     if (activeTextId) {
       setTextItems(
-        textItems.map((item) =>
-          item.id === activeTextId
-            ? { ...item, text: editingText, finalized: true }
-            : item,
-        ),
+        textItems.map((item) => {
+          if (item.id === activeTextId) {
+            // Reset fontSize to 24 if empty when finishing
+            const fontSize =
+              item.fontSize === "" || item.fontSize === 0 ? 24 : item.fontSize;
+            return { ...item, text: editingText, fontSize, finalized: true };
+          }
+          return item;
+        }),
       );
       setActiveTextId(null);
       setEditingText("");
@@ -184,6 +261,23 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
     if (activeTextId === id) {
       setEditInputPos({ x: newX, y: newY });
     }
+  };
+
+  const handleTextTransformEnd = (id) => {
+    const textNode = textRefs.current[id];
+    if (!textNode) return;
+
+    const scaleX = textNode.scaleX();
+    const scaleY = textNode.scaleY();
+    const rotation = textNode.rotation();
+    const x = textNode.x();
+    const y = textNode.y();
+
+    setTextItems(
+      textItems.map((item) =>
+        item.id === id ? { ...item, x, y, scaleX, scaleY, rotation } : item,
+      ),
+    );
   };
 
   const handleInputChange = (e) => {
@@ -241,131 +335,234 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
     }, 0);
   }
 
+  // Calculate scale to fit image to screen width while maintaining aspect ratio
+  const [stageWidth, setStageWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 360,
+  );
+  const [stageHeight, setStageHeight] = useState(
+    typeof window !== "undefined" ? window.innerHeight : 640,
+  );
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setStageWidth(window.innerWidth);
+      setStageHeight(window.innerHeight);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const scaleToFitWidth = stageWidth / width;
+  const scaledHeight = height * scaleToFitWidth;
+  const finalScale =
+    scaledHeight > stageHeight ? stageHeight / height : scaleToFitWidth;
+
   return (
-    <div className="flex h-screen w-screen flex-col bg-black text-white">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-700 px-4 py-3">
-        <button
-          onClick={reset}
-          className="text-lg font-semibold text-white transition hover:opacity-70"
+    <div className="relative flex h-screen w-screen flex-col overflow-hidden bg-slate-950 text-slate-50">
+      {/* Image Editor - Full screen */}
+      <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+        <Stage
+          width={stageWidth}
+          height={stageHeight}
+          ref={stageRef}
+          onClick={handleCanvasClick}
+          style={{
+            display: "block",
+            position: "absolute",
+            top: 0,
+            left: 0,
+          }}
         >
-          Back{" "}
-        </button>
-        <h1 className="text-xl font-bold">Create Post</h1>
-        <button
-          onClick={uploadImage}
-          className="text-lg font-bold text-blue-400 transition hover:opacity-70"
-        >
-          Post
-        </button>
+          <Layer>
+            {image && (
+              <KonvaImage
+                image={image}
+                width={width}
+                height={height}
+                x={(stageWidth - width * finalScale) / 2 / finalScale}
+                y={(stageHeight - height * finalScale) / 2 / finalScale}
+                scaleX={finalScale}
+                scaleY={finalScale}
+              />
+            )}
+            {textItems.map((item) => (
+              <React.Fragment key={item.id}>
+                <Text
+                  ref={(el) => {
+                    if (el) textRefs.current[item.id] = el;
+                  }}
+                  name={item.id}
+                  text={item.text}
+                  x={item.x}
+                  y={item.y}
+                  scaleX={item.scaleX}
+                  scaleY={item.scaleY}
+                  rotation={item.rotation}
+                  draggable
+                  fontSize={item.fontSize}
+                  fill={item.textColor || "white"}
+                  stroke="black"
+                  strokeWidth={1}
+                  onClick={() => {
+                    setSelectedTextId(item.id);
+                    editExistingText(item.id, item.text, item.x, item.y);
+                  }}
+                  onDragEnd={(e) => handleTextDragEnd(item.id, e)}
+                  onMouseEnter={(e) => {
+                    e.target.to({
+                      opacity: 0.8,
+                      duration: 0.1,
+                    });
+                    document.body.style.cursor = "pointer";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.to({
+                      opacity: 1,
+                      duration: 0.1,
+                    });
+                    document.body.style.cursor = "default";
+                  }}
+                />
+                {selectedTextId === item.id && (
+                  <Transformer
+                    ref={(el) => {
+                      if (el) transformerRefs.current[item.id] = el;
+                    }}
+                    onTransformEnd={() => handleTextTransformEnd(item.id)}
+                    onTransform={() => {
+                      const textNode = textRefs.current[item.id];
+                      if (textNode) {
+                        setTextItems((prevItems) =>
+                          prevItems.map((textItem) =>
+                            textItem.id === item.id
+                              ? {
+                                  ...textItem,
+                                  x: textNode.x(),
+                                  y: textNode.y(),
+                                  scaleX: textNode.scaleX(),
+                                  scaleY: textNode.scaleY(),
+                                  rotation: textNode.rotation(),
+                                }
+                              : textItem,
+                          ),
+                        );
+                      }
+                    }}
+                    rotateEnabled={true}
+                    resizeEnabled={true}
+                    enabledAnchors={[
+                      "top-left",
+                      "top-center",
+                      "top-right",
+                      "middle-right",
+                      "middle-left",
+                      "bottom-left",
+                      "bottom-center",
+                      "bottom-right",
+                    ]}
+                    boundBoxFunc={(oldBox, newBox) => newBox}
+                  />
+                )}
+              </React.Fragment>
+            ))}
+          </Layer>
+        </Stage>
       </div>
 
-      {/* Image Editor - Scrollable Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="flex w-full flex-col items-center p-4">
-          {/* Image Editor Container */}
-          <div
-            className="relative mb-4 w-full max-w-md"
-            ref={stageContainerRef}
-          >
-            <Stage
-              width={width}
-              height={height}
-              ref={stageRef}
-              onClick={handleCanvasClick}
-              className="overflow-hidden rounded-lg border border-gray-700"
-            >
-              <Layer>
-                {image && (
-                  <KonvaImage image={image} width={width} height={height} />
-                )}
-                {textItems.map((item) => (
-                  <div key={item.id}>
-                    <Text
-                      text={item.text}
-                      x={item.x}
-                      y={item.y}
-                      draggable
-                      fontSize={24}
-                      fill="white"
-                      stroke="black"
-                      strokeWidth={1}
-                      onClick={() =>
-                        editExistingText(item.id, item.text, item.x, item.y)
-                      }
-                      onDragEnd={(e) => handleTextDragEnd(item.id, e)}
-                      onMouseEnter={(e) => {
-                        e.target.to({
-                          opacity: 0.8,
-                          duration: 0.1,
-                        });
-                        document.body.style.cursor = "pointer";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.to({
-                          opacity: 1,
-                          duration: 0.1,
-                        });
-                        document.body.style.cursor = "default";
-                      }}
-                    />
-                    {activeTextId === item.id && (
-                      <Rect
-                        x={item.x - 5}
-                        y={item.y - 5}
-                        width={Math.max(item.text.length * 12 + 10, 50)}
-                        height={34}
-                        stroke="cyan"
-                        strokeWidth={2}
-                        fill="transparent"
-                      />
-                    )}
-                  </div>
-                ))}
-              </Layer>
-            </Stage>
-
-            {/* Text input box removed from here - will be below the image */}
-          </div>
-
-          {/* Text Editing Input - Below the image */}
+      {/* Floating Text Controls - Top */}
+      {activeTextId !== null && (
+        <div className="absolute left-4 right-4 top-20 z-20 max-h-64 overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 bg-opacity-40 backdrop-blur-sm">
+          {/* Text Editing Input */}
           {activeTextId !== null && (
-            <div className="mb-4 mt-4 w-full px-4">
-              <label className="mb-2 block text-xs font-semibold uppercase text-gray-400">
+            <div className="border-b border-slate-700 px-4 py-3">
+              <label className="mb-2 block text-xs font-semibold uppercase text-slate-400">
                 Edit Text
               </label>
-              <input
-                ref={inputRef}
-                type="text"
-                value={editingText}
-                onChange={handleInputChange}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") finishEditingText();
-                }}
-                onBlur={finishEditingText}
-                className="w-full rounded-lg border border-gray-700 bg-gray-900 p-3 text-white focus:border-blue-500 focus:outline-none"
-                placeholder="Enter text..."
-              />
+              <div className="mb-2 flex gap-2">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={editingText}
+                  onChange={handleInputChange}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") finishEditingText();
+                  }}
+                  className="flex-1 rounded-lg border border-slate-700 bg-slate-800 p-2 text-sm text-slate-50 focus:border-slate-500 focus:outline-none"
+                  placeholder="Enter text..."
+                />
+                <div className="flex items-center gap-1">
+                  <label className="whitespace-nowrap text-xs font-semibold uppercase text-slate-400">
+                    Size:
+                  </label>
+                  <input
+                    type="text"
+                    value={
+                      textItems.find((item) => item.id === activeTextId)
+                        ?.fontSize || ""
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const newSize = parseInt(val);
+                      if (val === "" || !isNaN(newSize)) {
+                        // Allow any value while typing
+                        setTextItems(
+                          textItems.map((item) =>
+                            item.id === activeTextId
+                              ? { ...item, fontSize: val === "" ? "" : newSize }
+                              : item,
+                          ),
+                        );
+                      }
+                    }}
+                    className="w-16 rounded-lg border border-slate-700 bg-slate-800 p-2 text-sm text-slate-50 focus:border-slate-500 focus:outline-none"
+                    placeholder="24"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <label className="whitespace-nowrap text-xs font-semibold uppercase text-slate-400">
+                    Color:
+                  </label>
+                  <input
+                    type="color"
+                    value={
+                      textItems.find((item) => item.id === activeTextId)
+                        ?.textColor || "#ffffff"
+                    }
+                    onChange={(e) => {
+                      setTextItems(
+                        textItems.map((item) =>
+                          item.id === activeTextId
+                            ? { ...item, textColor: e.target.value }
+                            : item,
+                        ),
+                      );
+                    }}
+                    className="h-10 w-10 cursor-pointer rounded-lg border border-slate-700 bg-slate-800 p-1"
+                  />
+                </div>
+              </div>
               <button
                 onClick={finishEditingText}
-                className="mt-2 w-full rounded-lg bg-blue-500 py-2 font-semibold text-white transition hover:bg-blue-600"
+                className="w-full rounded-lg bg-slate-600 py-1 text-sm font-semibold text-slate-50 transition hover:bg-slate-700"
               >
                 Done
               </button>
             </div>
           )}
           {textItems.filter((item) => item.finalized).length > 0 && (
-            <div className="mb-4 w-full max-w-md space-y-2">
-              <p className="text-xs uppercase text-gray-400">Added Text</p>
+            <div className="space-y-1 px-4 py-3">
+              <p className="text-xs font-semibold uppercase text-slate-400">
+                Added Text
+              </p>
               {textItems
                 .filter((item) => item.finalized)
                 .map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between rounded-lg border border-gray-700 bg-gray-900 p-3"
+                    className="flex items-center justify-between rounded border border-slate-700 bg-slate-800 p-2 text-sm"
                   >
                     <span
-                      className="flex-1 cursor-pointer text-sm transition hover:text-blue-400"
+                      className="flex-1 cursor-pointer transition hover:text-slate-300"
                       onClick={() =>
                         editExistingText(item.id, item.text, item.x, item.y)
                       }
@@ -374,7 +571,7 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
                     </span>
                     <button
                       onClick={() => deleteText(item.id)}
-                      className="ml-2 text-sm font-semibold text-gray-400 transition hover:text-red-400"
+                      className="ml-2 text-xs font-semibold text-slate-400 transition hover:text-slate-300"
                     >
                       Remove
                     </button>
@@ -383,51 +580,37 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
             </div>
           )}
         </div>
+      )}
+
+      {/* Overlay Buttons */}
+      <div className="absolute left-4 top-4 z-20">
+        <button
+          onClick={reset}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-600 text-slate-50 opacity-70 transition hover:bg-slate-700 hover:opacity-100"
+          title="Back"
+        >
+          ✕
+        </button>
       </div>
 
-      {/* Footer with action buttons */}
-      <div className="flex items-center justify-around border-t border-gray-700 bg-black p-4">
-        <button className="text-gray-400 transition hover:text-white">
-          <svg
-            className="h-6 w-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-          </svg>
+      <div className="absolute right-4 top-4 z-20 flex gap-2">
+        div{" "}
+        <button
+          onClick={() => addTextAtPosition(width / 2 - 50, height / 2)}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-600 text-xl font-bold text-slate-50 opacity-70 transition hover:bg-slate-700 hover:opacity-100"
+          title="Add Text"
+        >
+          +
         </button>
         <button
-          onClick={handlePost}
-          className="flex h-16 w-16 transform items-center justify-center rounded-full bg-blue-500 transition hover:scale-105 hover:bg-blue-600"
+          onClick={uploadImage}
+          className="flex items-center justify-center gap-2 rounded-full bg-slate-600 px-4 py-2 text-slate-50 opacity-70 transition hover:bg-slate-700 hover:opacity-100"
+          title="Post"
         >
-          <svg
-            className="h-8 w-8 text-white"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z" />
           </svg>
-        </button>
-        <button className="text-gray-400 transition hover:text-white">
-          <svg
-            className="h-6 w-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3v-6"
-            />
-          </svg>
+          Post
         </button>
       </div>
     </div>

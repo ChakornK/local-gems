@@ -3,7 +3,27 @@
 import Redis from "ioredis";
 import "./cleanup";
 
-export const redis = new Redis(process.env.REDIS_URI);
+const redisOptions = {
+  lazyConnect: true,
+  maxRetriesPerRequest: 0,
+  retryStrategy: (times) => {
+    if (times > 3) return null; // stop retrying after 3 attempts
+    return Math.min(times * 50, 2000);
+  },
+};
+
+export const redis = process.env.REDIS_URI
+  ? new Redis(process.env.REDIS_URI, redisOptions)
+  : new Redis(redisOptions);
+
+// Silence initial connection error logs for local dev
+redis.on('error', (err) => {
+  if (!process.env.REDIS_URI) {
+    // Just log once or ignore if we know we don't have a URI
+    return;
+  }
+  console.error('[Redis Error]', err);
+});
 
 export async function cacheData(key, fetchData, ttl) {
   const cachedData = await redis.get(key);

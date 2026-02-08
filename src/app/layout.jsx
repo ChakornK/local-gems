@@ -7,6 +7,8 @@ export const metadata = {
   description: "See what's happening near you",
 };
 
+import BottomNav from "@/components/layout/BottomNav";
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
@@ -22,8 +24,11 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body>
-        <GeolocationProvider>{children}</GeolocationProvider>
+      <body className="pb-12">
+        <GeolocationProvider>
+          {children}
+          <BottomNav />
+        </GeolocationProvider>
       </body>
     </html>
   );
