@@ -2,11 +2,11 @@ import { session } from "@/lib/session";
 import Post from "@/models/Post";
 import { NextResponse } from "next/server";
 
-export async function POST(req, res) {
+export async function POST(req, { params }) {
   const s = await session();
   if (!s) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const id = await res.params;
+  const { id } = await params;
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
   const post = await Post.findById(id);

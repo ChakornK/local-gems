@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, use, useEffect } from 'react';
 import { ArrowLeft, ChevronUp } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -9,20 +9,71 @@ export default function SignDetailsPage({ params }) {
     const router = useRouter();
     const { id } = use(params);
 
-    // Toggle between image-focused and text-focused
+    const [sign, setSign] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [isTextFocused, setIsTextFocused] = useState(false);
+    const [liking, setLiking] = useState(false);
 
-    const sign = {
-        id,
-        title: "Hidden Waterfall",
-        description:
-            "Found this amazing hidden waterfall behind the old mill. Great spot for a picnic!",
-        image:
-            "https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?q=80&w=2670&auto=format&fit=crop",
-        author: "User1",
-        date: "2 hours ago",
-        likes: 42
-    };
+    useEffect(() => {
+        const fetchSign = async () => {
+            try {
+                const res = await fetch(`/api/image/${id}`);
+                if (!res.ok) throw new Error('Failed to fetch gem details');
+                const data = await res.json();
+                setSign(data);
+            } catch (err) {
+                console.error(err);
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchSign();
+    }, [id]);
+
+    async function onLike() {
+        if (liking) return;
+        setLiking(true);
+        try {
+            const res = await fetch(`/api/image/${id}/like`, { method: 'POST' });
+            if (!res.ok) throw new Error('Failed to like');
+            const data = await res.json();
+            setSign(prev => ({ ...prev, likes: data.likes }));
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLiking(false);
+        }
+    }
+
+    if (loading) {
+        return (
+            <div className="h-screen w-full flex items-center justify-center bg-slate-900 text-white">
+                <div className="animate-pulse flex flex-col items-center">
+                    <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p className="text-slate-400 font-medium">Loading gem details...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error || !sign) {
+        return (
+            <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-900 text-white p-6">
+                <div className="bg-red-500/10 border border-red-500/20 p-6 rounded-2xl max-w-sm w-full text-center">
+                    <h2 className="text-xl font-bold text-red-400 mb-2">Error</h2>
+                    <p className="text-slate-400 mb-6">{error || 'Gem not found'}</p>
+                    <button
+                        onClick={() => router.back()}
+                        className="w-full bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl transition-colors"
+                    >
+                        Go Back
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     const heights = isTextFocused
         ? { image: 'h-[33%]', text: 'h-[67%]' }
@@ -50,7 +101,7 @@ export default function SignDetailsPage({ params }) {
             >
                 <Image
                     src={sign.image}
-                    alt={sign.title}
+                    alt="Local Gem"
                     fill
                     className="object-cover"
                     priority
@@ -92,14 +143,14 @@ export default function SignDetailsPage({ params }) {
                     <div className="flex justify-between items-start">
                         <div>
                             <h1 className="text-2xl font-bold text-white mb-1">
-                                {sign.title}
+                                Local Gem
                             </h1>
                             <p className="text-sm text-slate-400">
-                                Posted by @{sign.author}
+                                Posted by @{sign.createdBy?.username || 'user'}
                             </p>
                         </div>
                         <span className="text-xs text-slate-400 bg-slate-800 px-2 py-1 rounded-full border border-slate-700">
-                            {sign.date}
+                            {new Date(sign.createdAt).toLocaleDateString()}
                         </span>
                     </div>
                 </div>
@@ -107,14 +158,18 @@ export default function SignDetailsPage({ params }) {
                 {/* Description */}
                 <div className="flex-1 overflow-y-auto p-6">
                     <p className="text-slate-300 leading-relaxed text-base">
-                        {sign.description}
+                        {sign.description || "No description provided."}
                     </p>
                 </div>
 
                 {/* Actions */}
                 <div className="p-6 pt-4 border-t border-slate-800 flex gap-3">
-                    <button className="flex-1 bg-blue-500 text-white py-3 rounded-xl font-medium active:scale-95 transition-transform hover:bg-blue-600">
-                        Like ({sign.likes})
+                    <button
+                        onClick={onLike}
+                        disabled={liking}
+                        className="flex-1 bg-blue-500 disabled:opacity-50 text-white py-3 rounded-xl font-medium active:scale-95 transition-transform hover:bg-blue-600"
+                    >
+                        {liking ? "..." : `Like (${sign.likes || 0})`}
                     </button>
                     <button className="flex-1 bg-slate-800 text-white py-3 rounded-xl font-medium active:scale-95 transition-transform hover:bg-slate-700 border border-slate-700">
                         Share
@@ -124,3 +179,4 @@ export default function SignDetailsPage({ params }) {
         </div>
     );
 }
+

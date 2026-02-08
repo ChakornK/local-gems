@@ -105,7 +105,7 @@ export default function LocalGemsMap() {
   async function appraiseGem(gemId) {
     setGems((prev) =>
       prev.map((g) =>
-        g.id === gemId ? { ...g, appraisals: (g.appraisals || 0) + 1 } : g,
+        g._id === gemId ? { ...g, appraisals: (g.appraisals || 0) + 1 } : g,
       ),
     );
 
@@ -192,10 +192,10 @@ export default function LocalGemsMap() {
           )}
 
           {gems.map((g) => (
-            <Marker key={g.id} position={[g.lat, g.lng]}>
+            <Marker key={g._id} position={[g.lat, g.lng]}>
               <Popup>
-                <div className="w-[220px]">
-                  <div className="text-sm font-semibold text-gray-900">
+                <div className="w-[220px] bg-slate-900 p-4 rounded-lg">
+                  <div className="text-sm font-semibold text-white">
                     Local Gem
                   </div>
 
@@ -207,17 +207,25 @@ export default function LocalGemsMap() {
                     />
                   ) : null}
 
-                  <p className="mt-2 text-sm text-gray-800">{g.note}</p>
+                  <p className="mt-2 text-sm text-slate-300">{g.note}</p>
 
-                  <div className="mt-3 flex items-center justify-between">
-                    <button
-                      onClick={() => appraiseGem(g.id)}
-                      className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-black"
-                    >
-                      Appraise
-                    </button>
-                    <div className="text-xs text-gray-600">
-                      {g.appraisals || 0} appraisals
+                  <div className="mt-3 flex items-end justify-start gap-4">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => appraiseGem(g._id)}
+                        className="rounded-full bg-blue-500 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-600"
+                      >
+                        Appraise
+                      </button>
+                      <button
+                        onClick={() => route.push(`/sign/${g._id}`)}
+                        className="rounded-full bg-slate-700 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-slate-600 border border-slate-600"
+                      >
+                        Detail
+                      </button>
+                    </div>
+                    <div className="text-xs text-slate-400 whitespace-nowrap pb-2">
+                      {g.appraisals || 0} likes
                     </div>
                   </div>
                 </div>

@@ -16,7 +16,7 @@ const navItems = [
 export default function BottomNav() {
     const pathname = usePathname();
 
-    const isHiddenPath = pathname === '/takePhoto';
+    const isHiddenPath = pathname === '/takePhoto' || pathname.startsWith('/sign/');
 
     return (
         <AnimatePresence>
