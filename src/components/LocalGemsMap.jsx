@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 import { useGeolocation } from "@/context/GeolocationContext";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
+import GemDetails from "./GemDetails";
+import BottomSheet from "./BottomSheet";
 
 const MapContainer = dynamic(async () => (await import("react-leaflet")).MapContainer, { ssr: false });
 const TileLayer = dynamic(async () => (await import("react-leaflet")).TileLayer, { ssr: false });
@@ -24,7 +26,7 @@ function metersLabel(m) {
   return `${km} km`;
 }
 
-export default function LocalGemsMap() {
+export default function LocalGemsMap({ initialGemId }) {
   const { location, loading: geolocationLoading, error: geolocationError } = useGeolocation();
 
   const [rangeMeters, setRangeMeters] = useState(1000);
@@ -38,8 +40,16 @@ export default function LocalGemsMap() {
   const [newPhoto, setNewPhoto] = useState(null);
   const [savingGem, setSavingGem] = useState(false);
 
+  const [selectedGemId, setSelectedGemId] = useState(initialGemId || null);
+
   const route = useRouter();
   const [mapStyle, setMapStyle] = useState("satellite"); // "satellite" | "standard"
+
+  useEffect(() => {
+    if (initialGemId) {
+      setSelectedGemId(initialGemId);
+    }
+  }, [initialGemId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -311,6 +321,22 @@ export default function LocalGemsMap() {
           </div>
         </div>
       )}
+      {/* Internal Bottom Sheet for Direct Route /gem/[id] */}
+      <BottomSheet
+        open={!!selectedGemId}
+        onClose={() => {
+          setSelectedGemId(null);
+          route.push("/");
+        }}
+      >
+        <GemDetails
+          gemId={selectedGemId}
+          onClose={() => {
+            setSelectedGemId(null);
+            route.push("/");
+          }}
+        />
+      </BottomSheet>
     </div>
   );
 }

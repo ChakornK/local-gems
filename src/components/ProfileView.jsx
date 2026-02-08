@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Icon } from "@iconify/react";
 import BottomSheet from "./BottomSheet";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 const emojis = {
@@ -157,41 +158,15 @@ export default function ProfileView({ isMine, userId }) {
 
   const user = userData;
 
-  // Mock Stats for now, as they are not in the User model yet
-  const stats = {
-    signs: 4,
-    likes: 843,
+  const stats = user.stats || {
+    posts: 0,
+    likes: 0,
   };
 
-  const myposts = [
-    {
-      id: 1,
-      title: "Secret Garden",
-      image: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?q=80&w=3432&auto=format&fit=crop",
-      likes: 45,
-    },
-    {
-      id: 2,
-      title: "Best Coffee",
-      image: "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=3742&auto=format&fit=crop",
-      likes: 120,
-    },
-    {
-      id: 3,
-      title: "Sunset Point",
-      image: "https://images.unsplash.com/photo-1614531341773-01c51cbce8dc?q=80&w=3774&auto=format&fit=crop",
-      likes: 89,
-    },
-    {
-      id: 4,
-      title: "Old Library",
-      image: "https://images.unsplash.com/photo-1568667256549-094345857637?q=80&w=3415&auto=format&fit=crop",
-      likes: 210,
-    },
-  ];
+  const myposts = user.posts || [];
 
   return (
-    <div className="min-h-screen w-full bg-slate-900 pb-20">
+    <div className="min-h-screen w-full bg-slate-900 pb-28">
       {/* Topic Bar */}
       {!isMine && (
         <div className="relative z-20 flex w-full items-center justify-center border-b border-white/10 bg-white/5 py-4 backdrop-blur-md">
@@ -201,7 +176,9 @@ export default function ProfileView({ isMine, userId }) {
           >
             <Icon icon="mingcute:arrow-left-line" fontSize={20} />
           </button>
-          <span className="text-sm font-normal uppercase tracking-widest text-white">User Profile</span>
+          <span className="text-sm font-normal uppercase tracking-widest text-white">
+            {user.name ? `${user.name.split(" ")[0]}'s` : "User"} Profile
+          </span>
         </div>
       )}
 
@@ -317,43 +294,43 @@ export default function ProfileView({ isMine, userId }) {
         </div>
 
         {/* Stats Row */}
-        <div className="mt-6 flex gap-6 border-y border-slate-800 py-4">
-          <div className="flex flex-col">
-            <span className="text-2xl font-bold text-white">{stats.signs}</span>
-            <span className="text-xs uppercase tracking-wider text-slate-400">Signs</span>
+        <div className="mt-6 flex items-center justify-evenly gap-6 border-y border-slate-800 py-4">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-bold text-white">{stats.posts}</span>
+            <span className="mt-2 text-xs uppercase tracking-widest text-slate-400">Gems</span>
           </div>
-          <div className="flex flex-col">
+          <div className="flex items-center gap-2">
             <span className="text-2xl font-bold text-white">{stats.likes}</span>
-            <span className="text-xs uppercase tracking-wider text-slate-400">Likes</span>
+            <span className="mt-2 text-xs uppercase tracking-widest text-slate-400">Likes</span>
           </div>
         </div>
       </div>
 
       {/* Content Tabs */}
       <div className="mt-6 px-6">
-        <div className="mb-6 flex gap-6 border-b border-slate-800">
-          <button className="border-b-2 border-blue-500 pb-3 font-medium text-blue-400">My Signs</button>
-        </div>
+        <p className="mb-4 text-2xl font-bold text-white">Gems</p>
 
         {/* Grid Gallery */}
         <div className="grid grid-cols-2 gap-4">
           {myposts.map((post) => (
-            <div key={post.id} className="aspect-3/4 group relative overflow-hidden rounded-xl bg-slate-800">
-              <Image
-                src={post.image}
-                alt={post.title}
-                fill
-                className="object-cover transition-transform group-hover:scale-105"
-              />
-              <div className="bg-linear-to-t absolute inset-0 from-black/80 via-transparent to-transparent opacity-90" />
-              <div className="absolute bottom-3 left-3 right-3">
-                <h3 className="truncate text-sm font-bold text-white">{post.title}</h3>
-                <div className="mt-1 flex items-center gap-1 text-xs text-slate-300">
-                  <Icon icon="mingcute:heart-line" fontSize={14} />
-                  <span>{post.likes}</span>
+            <Link key={post._id} href={`/gem/${post._id}`} scroll={false}>
+              <div className="aspect-3/4 group relative overflow-hidden rounded-xl bg-slate-800">
+                <Image
+                  src={post.image}
+                  alt={post.description || "Local Gem"}
+                  fill
+                  className="object-cover transition-transform group-hover:scale-105"
+                />
+                <div className="bg-linear-to-t absolute inset-0 from-black/80 via-transparent to-transparent opacity-90" />
+                <div className="absolute bottom-3 left-3 right-3">
+                  <h3 className="truncate text-sm font-bold text-white">{post.description || "Untitled Gem"}</h3>
+                  <div className="mt-1 flex items-center gap-1 text-xs text-slate-300">
+                    <Icon icon="mingcute:heart-line" fontSize={14} />
+                    <span>{post.likes}</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
