@@ -252,17 +252,7 @@ export default function LocalGemsMap() {
         </MapContainer>
       </div>
 
-      {/* Add button */}
-      <div className="pointer-events-none absolute bottom-6 left-0 right-0 z-[1000] flex justify-center">
-        <button
-          onClick={() => setAddOpen(true)}
-          className="pointer-events-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-900 shadow-xl ring-1 ring-white/10 hover:bg-black transition-transform active:scale-95"
-          aria-label="Add a gem"
-          title="Add a gem"
-        >
-          <Plus size={32} strokeWidth={2.5} className="text-white" />
-        </button>
-      </div>
+
 
       {/* Settings modal */}
       {settingsOpen && (
