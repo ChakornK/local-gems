@@ -294,14 +294,14 @@ export default function ProfileView({ isMine, userId }) {
         </div>
 
         {/* Stats Row */}
-        <div className="mt-6 flex gap-6 border-y border-slate-800 py-4">
-          <div className="flex flex-col">
+        <div className="mt-6 flex items-center justify-evenly gap-6 border-y border-slate-800 py-4">
+          <div className="flex items-center gap-2">
             <span className="text-2xl font-bold text-white">{stats.posts}</span>
-            <span className="text-xs uppercase tracking-wider text-slate-400">Gems</span>
+            <span className="mt-2 text-xs uppercase tracking-widest text-slate-400">Gems</span>
           </div>
-          <div className="flex flex-col">
+          <div className="flex items-center gap-2">
             <span className="text-2xl font-bold text-white">{stats.likes}</span>
-            <span className="text-xs uppercase tracking-wider text-slate-400">Likes</span>
+            <span className="mt-2 text-xs uppercase tracking-widest text-slate-400">Likes</span>
           </div>
         </div>
       </div>
