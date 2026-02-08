@@ -23,7 +23,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body className="pb-20">
+      <body className="pb-12">
         {children}
         <BottomNav />
       </body>
