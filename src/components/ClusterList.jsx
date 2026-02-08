@@ -59,10 +59,6 @@ export default function ClusterList({ gems, onGemClick, onClose }) {
               <p className="line-clamp-2 text-sm leading-snug text-slate-400">
                 {gem.description || "No description provided."}
               </p>
-              <div className="mt-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-blue-400/80">
-                <Icon icon="mingcute:location-line" />
-                <span>View Details</span>
-              </div>
             </div>
 
             <div className="rounded-full bg-slate-700/50 p-2 text-slate-500 transition-colors group-hover:bg-blue-500/10 group-hover:text-blue-400">
