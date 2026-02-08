@@ -145,9 +145,9 @@ export default function LocalGemsMap({ initialGemId }) {
             />
           )}
 
-          {location && (
+          {location && userIcon && (
             <>
-              <Marker position={[location.lat, location.lng]} icon={userIcon || undefined} interactive={false}></Marker>
+              <Marker position={[location.lat, location.lng]} icon={userIcon} interactive={false}></Marker>
               <Circle center={[location.lat, location.lng]} radius={rangeMeters} />
             </>
           )}
