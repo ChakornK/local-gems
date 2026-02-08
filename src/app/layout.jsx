@@ -6,6 +6,8 @@ export const metadata = {
   description: "See what's happening near you",
 };
 
+import FullScreenButton from "@/components/FullScreenButton";
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
@@ -17,7 +19,10 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body className="h-dvh pb-12">{children}</body>
+      <body className="h-dvh pb-12">
+        <FullScreenButton />
+        {children}
+      </body>
     </html>
   );
 }
