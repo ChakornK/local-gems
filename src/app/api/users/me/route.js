@@ -23,9 +23,9 @@ export async function GET() {
     Post.countDocuments({ createdBy: session.user.id }),
     Post.aggregate([
       { $match: { createdBy: new mongoose.Types.ObjectId(session.user.id) } },
-      { $group: { _id: null, totalLikes: { $sum: "$likes" } } },
+      { $group: { _id: null, totalLikes: { $sum: { $size: { $ifNull: ["$likes", []] } } } } },
     ]),
-    Post.find({ createdBy: session.user.id }).sort({ createdAt: -1 }).limit(20),
+    Post.find({ createdBy: session.user.id }).sort({ createdAt: -1 }).limit(20).lean(),
   ]);
 
   if (!user) {
@@ -42,7 +42,10 @@ export async function GET() {
     bio: userData?.bio || "",
     pfp: userData?.pfp || "person",
     stats,
-    posts: userPosts,
+    posts: userPosts.map((post) => ({
+      ...post,
+      likes: Array.isArray(post.likes) ? post.likes.length : 0,
+    })),
   };
 
   return NextResponse.json(mergedUser);

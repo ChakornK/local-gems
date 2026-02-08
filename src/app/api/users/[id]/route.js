@@ -21,9 +21,9 @@ export async function GET(req, { params }) {
       Post.countDocuments({ createdBy: id }),
       Post.aggregate([
         { $match: { createdBy: new mongoose.Types.ObjectId(id) } },
-        { $group: { _id: null, totalLikes: { $sum: "$likes" } } },
+        { $group: { _id: null, totalLikes: { $sum: { $size: { $ifNull: ["$likes", []] } } } } },
       ]),
-      Post.find({ createdBy: id }).sort({ createdAt: -1 }).limit(20),
+      Post.find({ createdBy: id }).sort({ createdAt: -1 }).limit(20).lean(),
     ]);
 
     if (!user) {
@@ -42,7 +42,10 @@ export async function GET(req, { params }) {
       pfp: userData?.pfp || "person",
       image: user.image,
       stats,
-      posts: userPosts,
+      posts: userPosts.map((post) => ({
+        ...post,
+        likes: Array.isArray(post.likes) ? post.likes.length : 0,
+      })),
     };
 
     return NextResponse.json(publicProfile);
