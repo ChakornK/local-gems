@@ -140,12 +140,12 @@ export default function LocalGemsMap({ initialGemId }) {
         >
           {mapStyle === "satellite" ? (
             <TileLayer
-              attribution="Tiles &copy; Esri"
+              attribution="Tiles &copy; Esri - &copy; OpenStreetMap contributors"
               url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
             />
           ) : (
             <TileLayer
-              attribution="&copy; OpenStreetMap contributors"
+              attribution="Tiles &copy; Jawg - &copy; OpenStreetMap contributors"
               url="https://tile.jawg.io/03a4a9f9-9307-4a1d-ac35-fda25ea3559f/{z}/{x}/{y}{r}.png?access-token=JpJbH2xN72Dan8bpThb5RwJCZMEvPzCDfrU0IVidSDRUQ4zLRB9ryTvIZEliu0Cu"
             />
           )}
