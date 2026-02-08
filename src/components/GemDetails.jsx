@@ -4,14 +4,16 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Icon } from "@iconify/react";
+import { motion, AnimatePresence } from "motion/react";
 
 export default function GemDetails({ gemId, onClose }) {
   const router = useRouter();
   const [sign, setSign] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [liking, setLiking] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showHearts, setShowHearts] = useState([]);
+  const [pulseCount, setPulseCount] = useState(0);
 
   useEffect(() => {
     if (!gemId) return;
@@ -33,8 +35,23 @@ export default function GemDetails({ gemId, onClose }) {
   }, [gemId]);
 
   async function onLike() {
-    if (liking || !sign) return;
-    setLiking(true);
+    if (!sign) return;
+
+    const previousLikes = sign.likes || 0;
+    setSign((prev) => ({ ...prev, likes: previousLikes + 1 }));
+    setPulseCount((prev) => prev + 1);
+
+    const newHearts = Array.from({ length: 6 }).map((_, i) => ({
+      id: Date.now() + i,
+      angle: (Math.random() - 0.5) * 60,
+      distance: 100 + Math.random() * 50,
+      color: ["#F472B6", "#EC4899", "#DB2777", "#F0ABFC", "#E879F9"][Math.floor(Math.random() * 5)],
+    }));
+    setShowHearts((prev) => [...prev, ...newHearts]);
+    setTimeout(() => {
+      setShowHearts((prev) => prev.filter((h) => !newHearts.find((nh) => nh.id === h.id)));
+    }, 1000);
+
     try {
       const res = await fetch(`/api/image/${gemId}/like`, { method: "POST" });
       if (!res.ok) throw new Error("Failed to like");
@@ -42,8 +59,7 @@ export default function GemDetails({ gemId, onClose }) {
       setSign((prev) => ({ ...prev, likes: data.likes }));
     } catch (err) {
       console.error(err);
-    } finally {
-      setLiking(false);
+      setSign((prev) => ({ ...prev, likes: previousLikes }));
     }
   }
 
@@ -138,11 +154,44 @@ export default function GemDetails({ gemId, onClose }) {
             <div className="flex shrink-0 gap-3 border-t border-slate-800 p-6 pb-8 pt-4">
               <button
                 onClick={onLike}
-                disabled={liking}
-                className="flex-1 rounded-xl bg-blue-500 py-3 font-medium text-white transition-transform hover:bg-blue-600 active:scale-95 disabled:opacity-50"
+                className="group relative flex-1 transition-all active:scale-90 disabled:opacity-50"
               >
-                {liking ? "..." : `Like (${sign.likes || 0})`}
+                <div className="bg-linear-to-r relative flex w-full items-center justify-center gap-2 rounded-xl from-pink-500 via-rose-500 to-orange-500 py-3 font-bold text-white shadow-lg transition-all group-hover:from-pink-600 group-hover:to-orange-600">
+                  <motion.div
+                    key={pulseCount}
+                    initial={{ scale: 1 }}
+                    animate={{ scale: [1, 1.5, 1] }}
+                    transition={{ duration: 0.3 }}
+                    className="flex items-center"
+                  >
+                    <Icon icon="mingcute:heart-fill" fontSize={22} className="drop-shadow-sm" />
+                  </motion.div>
+
+                  <span>{sign.likes || 0}</span>
+                </div>
+
+                <AnimatePresence>
+                  {showHearts.map((heart) => (
+                    <motion.div
+                      key={heart.id}
+                      initial={{ opacity: 1, scale: 0, x: 0, y: 0 }}
+                      animate={{
+                        opacity: 0,
+                        scale: 1.5,
+                        x: Math.sin((heart.angle * Math.PI) / 180) * heart.distance,
+                        y: -Math.cos((heart.angle * Math.PI) / 180) * heart.distance,
+                      }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                      className="pointer-events-none absolute left-1/2 top-1/2 -ml-3 -mt-3"
+                      style={{ color: heart.color }}
+                    >
+                      <Icon icon="mingcute:heart-fill" fontSize={24} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </button>
+
               <button
                 onClick={handleCopy}
                 className={`flex-1 rounded-xl border py-3 font-medium transition-all active:scale-95 ${
