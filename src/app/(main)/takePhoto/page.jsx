@@ -265,24 +265,7 @@ function KonvaEditor({ imageUrl, width, height, onBack, onNext }) {
 
   // Helper to render text based on style
   const renderTextItem = (item) => {
-    const isSelected = selectedTextId === item.id;
     const isBeingEdited = editingItemId === item.id;
-
-    // Hide item while editing to avoid duplication with input preview (optional, but cleaner)
-    // For now, we keep it visible but maybe dimmed? Or just let it update live?
-    // Let's let it update live if we weren't using a separate form, but since we are,
-    // we might want to hide the canvas version if it overlaps.
-    // Actually, usually you want to see the canvas version update as you type.
-    // But since our input is fixed at bottom, we'll update the item in real-time?
-    // Simplified: We update local state 'currentText' and only commit to 'textItems' on save.
-    // So the canvas item won't update until save.
-    // If we want live preview, we need to update textItems on change.
-    // Let's stick to update-on-save for simplicity, or we can do live preview.
-    // Let's do live preview by temporarily updating the item in the list if it matches editingItemId.
-
-    // Actually, distinct separation is easier. The user types in the box, then clicks done.
-    // BUT, the user wants to see how it looks on the image.
-    // So we should probably render a "preview" item if we are editing.
 
     const textToRender = isBeingEdited ? currentText : item.text;
     const styleToRender = isBeingEdited ? currentStyle : item.styleType;
@@ -299,8 +282,20 @@ function KonvaEditor({ imageUrl, width, height, onBack, onNext }) {
       onClick: (e) => {
         if (isEditing) return;
         e.cancelBubble = true;
-        setSelectedTextId(item.id);
-        startEditingText(item);
+        if (selectedTextId === item.id) {
+          startEditingText(item);
+        } else {
+          setSelectedTextId(item.id);
+        }
+      },
+      onTap: (e) => {
+        if (isEditing) return;
+        e.cancelBubble = true;
+        if (selectedTextId === item.id) {
+          startEditingText(item);
+        } else {
+          setSelectedTextId(item.id);
+        }
       },
       onDragEnd: (e) => {
         setTextItems(textItems.map((t) => (t.id === item.id ? { ...t, x: e.target.x(), y: e.target.y() } : t)));
