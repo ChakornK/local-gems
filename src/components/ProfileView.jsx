@@ -166,7 +166,7 @@ export default function ProfileView({ isMine, userId }) {
   const myposts = user.posts || [];
 
   return (
-    <div className="min-h-screen w-full bg-slate-900 pb-20">
+    <div className="min-h-screen w-full bg-slate-900 pb-28">
       {/* Topic Bar */}
       {!isMine && (
         <div className="relative z-20 flex w-full items-center justify-center border-b border-white/10 bg-white/5 py-4 backdrop-blur-md">
