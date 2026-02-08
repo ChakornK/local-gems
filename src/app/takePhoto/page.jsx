@@ -1,5 +1,6 @@
 "use client";
 
+import { useGeolocation } from "@/context/GeolocationContext";
 import { useRef, useState } from "react";
 import { Stage, Layer, Text, Image as KonvaImage, Rect } from "react-konva";
 import useImage from "use-image";
@@ -7,10 +8,13 @@ import useImage from "use-image";
 export default function CameraWithEditor() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  
+
   // State to hold the captured image data URL
   const [capturedImage, setCapturedImage] = useState(null);
-  const [videoDimensions, setVideoDimensions] = useState({ width: 600, height: 0 });
+  const [videoDimensions, setVideoDimensions] = useState({
+    width: 600,
+    height: 0,
+  });
 
   // --- CAMERA LOGIC ---
   function givePermission() {
@@ -27,8 +31,12 @@ export default function CameraWithEditor() {
 
   function handleCanPlay() {
     if (videoRef.current) {
-      const aspectRatio = videoRef.current.videoHeight / videoRef.current.videoWidth;
-      setVideoDimensions({ ...videoDimensions, height: videoDimensions.width * aspectRatio });
+      const aspectRatio =
+        videoRef.current.videoHeight / videoRef.current.videoWidth;
+      setVideoDimensions({
+        ...videoDimensions,
+        height: videoDimensions.width * aspectRatio,
+      });
     }
   }
 
@@ -40,51 +48,57 @@ export default function CameraWithEditor() {
     if (videoDimensions.width && videoDimensions.height) {
       canvas.width = videoDimensions.width;
       canvas.height = videoDimensions.height;
-      context.drawImage(video, 0, 0, videoDimensions.width, videoDimensions.height);
+      context.drawImage(
+        video,
+        0,
+        0,
+        videoDimensions.width,
+        videoDimensions.height,
+      );
 
       // Save the image to state
       const data = canvas.toDataURL("image/png");
       setCapturedImage(data);
-      
+
       // Stop the camera stream to save resources
       const stream = video.srcObject;
       const tracks = stream.getTracks();
-      tracks.forEach(track => track.stop());
+      tracks.forEach((track) => track.stop());
     }
   }
 
   // --- RENDERING LOGIC ---
   return (
-    <div className="flex flex-col h-screen w-screen bg-black text-white overflow-hidden">
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-black text-white">
       {!capturedImage ? (
-        <div className="flex flex-col items-center justify-center h-full gap-4 p-4 bg-black">
-          <video 
-            ref={videoRef} 
+        <div className="flex h-full flex-col items-center justify-center gap-4 bg-black p-4">
+          <video
+            ref={videoRef}
             onCanPlay={handleCanPlay}
-            className="rounded-lg mb-4"
+            className="mb-4 rounded-lg"
             style={{ width: videoDimensions.width, maxHeight: "60vh" }}
           />
           <div className="flex gap-3">
-            <button 
-              onClick={givePermission} 
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold transition"
+            <button
+              onClick={givePermission}
+              className="rounded-lg bg-blue-500 px-6 py-2 font-semibold text-white transition hover:bg-blue-600"
             >
               Start Camera
             </button>
-            <button 
-              onClick={capturePicture} 
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold transition"
+            <button
+              onClick={capturePicture}
+              className="rounded-lg bg-blue-500 px-6 py-2 font-semibold text-white transition hover:bg-blue-600"
             >
               Take Photo
             </button>
           </div>
-          <canvas ref={canvasRef} style={{ display: 'none' }} />
+          <canvas ref={canvasRef} style={{ display: "none" }} />
         </div>
       ) : (
-        <KonvaEditor 
-          imageUrl={capturedImage} 
-          width={videoDimensions.width} 
-          height={videoDimensions.height} 
+        <KonvaEditor
+          imageUrl={capturedImage}
+          width={videoDimensions.width}
+          height={videoDimensions.height}
           reset={() => setCapturedImage(null)}
         />
       )}
@@ -102,18 +116,23 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
   const stageContainerRef = useRef(null);
   const inputRef = useRef(null);
 
+  const { location, loading, error } = useGeolocation();
+
   const addTextAtPosition = (x, y) => {
     const newId = Date.now().toString();
     setActiveTextId(newId);
     setEditingText("");
     setEditInputPos({ x, y });
-    setTextItems([...textItems, {
-      id: newId,
-      text: "",
-      x: x,
-      y: y,
-      finalized: false,
-    }]);
+    setTextItems([
+      ...textItems,
+      {
+        id: newId,
+        text: "",
+        x: x,
+        y: y,
+        finalized: false,
+      },
+    ]);
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
@@ -127,9 +146,13 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
 
   const finishEditingText = () => {
     if (activeTextId) {
-      setTextItems(textItems.map(item => 
-        item.id === activeTextId ? { ...item, text: editingText, finalized: true } : item
-      ));
+      setTextItems(
+        textItems.map((item) =>
+          item.id === activeTextId
+            ? { ...item, text: editingText, finalized: true }
+            : item,
+        ),
+      );
       setActiveTextId(null);
       setEditingText("");
     }
@@ -143,7 +166,7 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
   };
 
   const deleteText = (id) => {
-    setTextItems(textItems.filter(item => item.id !== id));
+    setTextItems(textItems.filter((item) => item.id !== id));
     if (activeTextId === id) {
       setActiveTextId(null);
       setEditingText("");
@@ -153,9 +176,11 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
   const handleTextDragEnd = (id, e) => {
     const newX = e.target.x();
     const newY = e.target.y();
-    setTextItems(textItems.map(item =>
-      item.id === id ? { ...item, x: newX, y: newY } : item
-    ));
+    setTextItems(
+      textItems.map((item) =>
+        item.id === id ? { ...item, x: newX, y: newY } : item,
+      ),
+    );
     if (activeTextId === id) {
       setEditInputPos({ x: newX, y: newY });
     }
@@ -165,9 +190,11 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
     const newText = e.target.value;
     setEditingText(newText);
     if (activeTextId) {
-      setTextItems(textItems.map(item =>
-        item.id === activeTextId ? { ...item, text: newText } : item
-      ));
+      setTextItems(
+        textItems.map((item) =>
+          item.id === activeTextId ? { ...item, text: newText } : item,
+        ),
+      );
     }
   };
 
@@ -184,46 +211,50 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
 
   function uploadImage() {
     finishEditingText();
+    if (loading) alert("Please wait for geolocation to load.");
     setTimeout(() => {
       const stage = stageRef.current;
-      stage.toBlob((blob) => {
+      stage.toBlob().then((blob) => {
         if (!blob) {
-          console.error('Failed to convert canvas to blob');
+          console.error("Failed to convert canvas to blob");
           return;
         }
 
         const formData = new FormData();
-        formData.append('image', blob, 'edited-image.png');
+        formData.append("image", blob, "edited-image.png");
+        formData.append("lat", location.lat.toString());
+        formData.append("lng", location.lng.toString());
+        formData.append("description", "");
 
-        fetch('/api/upload', {
-          method: 'POST',
-          body: formData
+        fetch("/api/image", {
+          method: "POST",
+          body: formData,
         })
-        .then(response => response.json())
-        .then(data => {
-          console.log('Upload successful:', data);
-        })
-        .catch(error => {
-          console.error('Upload error:', error);
-        });
+          .then((response) => response.json())
+          .then((data) => {
+            console.log("Upload successful:", data);
+          })
+          .catch((error) => {
+            console.error("Upload error:", error);
+          });
       });
     }, 0);
   }
 
-
   return (
-    <div className="flex flex-col h-screen w-screen bg-black text-white">
+    <div className="flex h-screen w-screen flex-col bg-black text-white">
       {/* Header */}
-      <div className="flex justify-between items-center px-4 py-3 border-b border-gray-700">
-        <button 
-          onClick={reset} 
-          className="text-white text-lg font-semibold hover:opacity-70 transition"
+      <div className="flex items-center justify-between border-b border-gray-700 px-4 py-3">
+        <button
+          onClick={reset}
+          className="text-lg font-semibold text-white transition hover:opacity-70"
         >
-          Back        </button>
+          Back{" "}
+        </button>
         <h1 className="text-xl font-bold">Create Post</h1>
-        <button 
-          onClick={uploadImage} 
-          className="text-blue-400 text-lg font-bold hover:opacity-70 transition"
+        <button
+          onClick={uploadImage}
+          className="text-lg font-bold text-blue-400 transition hover:opacity-70"
         >
           Post
         </button>
@@ -231,12 +262,23 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
 
       {/* Image Editor - Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="w-full flex flex-col items-center p-4">
+        <div className="flex w-full flex-col items-center p-4">
           {/* Image Editor Container */}
-          <div className="w-full max-w-md relative mb-4" ref={stageContainerRef}>
-            <Stage width={width} height={height} ref={stageRef} onClick={handleCanvasClick} className="border border-gray-700 rounded-lg overflow-hidden">
+          <div
+            className="relative mb-4 w-full max-w-md"
+            ref={stageContainerRef}
+          >
+            <Stage
+              width={width}
+              height={height}
+              ref={stageRef}
+              onClick={handleCanvasClick}
+              className="overflow-hidden rounded-lg border border-gray-700"
+            >
               <Layer>
-                {image && <KonvaImage image={image} width={width} height={height} />}
+                {image && (
+                  <KonvaImage image={image} width={width} height={height} />
+                )}
                 {textItems.map((item) => (
                   <div key={item.id}>
                     <Text
@@ -248,7 +290,9 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
                       fill="white"
                       stroke="black"
                       strokeWidth={1}
-                      onClick={() => editExistingText(item.id, item.text, item.x, item.y)}
+                      onClick={() =>
+                        editExistingText(item.id, item.text, item.x, item.y)
+                      }
                       onDragEnd={(e) => handleTextDragEnd(item.id, e)}
                       onMouseEnter={(e) => {
                         e.target.to({
@@ -286,8 +330,10 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
 
           {/* Text Editing Input - Below the image */}
           {activeTextId !== null && (
-            <div className="w-full px-4 mt-4 mb-4">
-              <label className="text-xs text-gray-400 uppercase font-semibold block mb-2">Edit Text</label>
+            <div className="mb-4 mt-4 w-full px-4">
+              <label className="mb-2 block text-xs font-semibold uppercase text-gray-400">
+                Edit Text
+              </label>
               <input
                 ref={inputRef}
                 type="text"
@@ -297,59 +343,90 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
                   if (e.key === "Enter") finishEditingText();
                 }}
                 onBlur={finishEditingText}
-                className="w-full bg-gray-900 text-white border border-gray-700 rounded-lg p-3 focus:border-blue-500 focus:outline-none"
+                className="w-full rounded-lg border border-gray-700 bg-gray-900 p-3 text-white focus:border-blue-500 focus:outline-none"
                 placeholder="Enter text..."
               />
               <button
                 onClick={finishEditingText}
-                className="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg font-semibold transition"
+                className="mt-2 w-full rounded-lg bg-blue-500 py-2 font-semibold text-white transition hover:bg-blue-600"
               >
                 Done
               </button>
             </div>
           )}
-          {textItems.filter(item => item.finalized).length > 0 && (
-            <div className="w-full max-w-md space-y-2 mb-4">
-              <p className="text-xs text-gray-400 uppercase">Added Text</p>
-              {textItems.filter(item => item.finalized).map((item) => (
-                <div key={item.id} className="flex items-center justify-between bg-gray-900 p-3 rounded-lg border border-gray-700">
-                  <span 
-                    className="text-sm flex-1 cursor-pointer hover:text-blue-400 transition" 
-                    onClick={() => editExistingText(item.id, item.text, item.x, item.y)}
+          {textItems.filter((item) => item.finalized).length > 0 && (
+            <div className="mb-4 w-full max-w-md space-y-2">
+              <p className="text-xs uppercase text-gray-400">Added Text</p>
+              {textItems
+                .filter((item) => item.finalized)
+                .map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between rounded-lg border border-gray-700 bg-gray-900 p-3"
                   >
-                    {item.text || "(empty)"}
-                  </span>
-                  <button
-                    onClick={() => deleteText(item.id)}
-                    className="text-gray-400 hover:text-red-400 transition ml-2 text-sm font-semibold"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
+                    <span
+                      className="flex-1 cursor-pointer text-sm transition hover:text-blue-400"
+                      onClick={() =>
+                        editExistingText(item.id, item.text, item.x, item.y)
+                      }
+                    >
+                      {item.text || "(empty)"}
+                    </span>
+                    <button
+                      onClick={() => deleteText(item.id)}
+                      className="ml-2 text-sm font-semibold text-gray-400 transition hover:text-red-400"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
             </div>
           )}
         </div>
       </div>
 
       {/* Footer with action buttons */}
-      <div className="border-t border-gray-700 p-4 flex justify-around items-center bg-black">
-        <button className="text-gray-400 hover:text-white transition">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      <div className="flex items-center justify-around border-t border-gray-700 bg-black p-4">
+        <button className="text-gray-400 transition hover:text-white">
+          <svg
+            className="h-6 w-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
           </svg>
         </button>
-        <button 
+        <button
           onClick={handlePost}
-          className="w-16 h-16 bg-blue-500 hover:bg-blue-600 rounded-full flex items-center justify-center transition transform hover:scale-105"
+          className="flex h-16 w-16 transform items-center justify-center rounded-full bg-blue-500 transition hover:scale-105 hover:bg-blue-600"
         >
-          <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="h-8 w-8 text-white"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path d="M8 5v14l11-7z" />
           </svg>
         </button>
-        <button className="text-gray-400 hover:text-white transition">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3v-6" />
+        <button className="text-gray-400 transition hover:text-white">
+          <svg
+            className="h-6 w-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3v-6"
+            />
           </svg>
         </button>
       </div>

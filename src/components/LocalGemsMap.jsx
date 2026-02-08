@@ -2,6 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import { useGeolocation } from "@/context/GeolocationContext";
+import { useRouter } from "next/navigation";
 
 const MapContainer = dynamic(
   async () => (await import("react-leaflet")).MapContainer,
@@ -28,8 +30,11 @@ function metersLabel(m) {
 }
 
 export default function LocalGemsMap() {
-  const [coords, setCoords] = useState(null);
-  const [geoErr, setGeoErr] = useState(null);
+  const {
+    location,
+    loading: geolocationLoading,
+    error: geolocationError,
+  } = useGeolocation();
 
   const [rangeMeters, setRangeMeters] = useState(1000);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -41,6 +46,8 @@ export default function LocalGemsMap() {
   const [newNote, setNewNote] = useState("");
   const [newPhoto, setNewPhoto] = useState(null);
   const [savingGem, setSavingGem] = useState(false);
+
+  const route = useRouter();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -65,38 +72,19 @@ export default function LocalGemsMap() {
     })();
   }, []);
 
-  // Get user location
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      setGeoErr("Geolocation is not supported on this device.");
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setCoords({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-        });
-      },
-      (err) => setGeoErr(err.message || "Unable to get your location."),
-      { enableHighAccuracy: true, timeout: 10000 },
-    );
-  }, []);
-
   // Load gems (works with your backend later, but will also work with the mock API I can give you)
   useEffect(() => {
-    async function load() {
-      if (!coords) return;
+    (async () => {
+      if (geolocationLoading || !location) return;
       setLoadingGems(true);
       try {
         const qs = new URLSearchParams({
-          lat: String(coords.lat),
-          lng: String(coords.lng),
-          radiusMeters: String(rangeMeters),
+          lat: location.lat.toString(),
+          lng: location.lng.toString(),
+          radiusMeters: rangeMeters.toString(),
         });
 
-        const res = await fetch(`/api/gems?${qs.toString()}`);
+        const res = await fetch(`/api/image?${qs.toString()}`);
         if (!res.ok) throw new Error("Failed to load gems");
         const data = await res.json();
         setGems(data.gems || []);
@@ -105,13 +93,12 @@ export default function LocalGemsMap() {
       } finally {
         setLoadingGems(false);
       }
-    }
-    load();
-  }, [coords, rangeMeters]);
+    })();
+  }, [location, rangeMeters]);
 
   const center = useMemo(() => {
-    return coords ? [coords.lat, coords.lng] : [49.2827, -123.1207]; // fallback (Vancouver)
-  }, [coords]);
+    return location ? [location.lat, location.lng] : [49.2827, -123.1207]; // fallback (Vancouver)
+  }, [location]);
 
   async function appraiseGem(gemId) {
     setGems((prev) =>
@@ -121,15 +108,15 @@ export default function LocalGemsMap() {
     );
 
     try {
-      const res = await fetch(`/api/gems/${gemId}/appraise`, {
+      const res = await fetch(`/api/image/${gemId}/like`, {
         method: "POST",
       });
-      if (!res.ok) throw new Error("appraise failed");
+      if (!res.ok) throw new Error("like failed");
     } catch (e) {
       setGems((prev) =>
         prev.map((g) =>
           g.id === gemId
-            ? { ...g, appraisals: Math.max(0, (g.appraisals || 1) - 1) }
+            ? { ...g, likes: Math.max(0, (g.appraisals || 1) - 1) }
             : g,
         ),
       );
@@ -137,31 +124,7 @@ export default function LocalGemsMap() {
   }
 
   async function submitNewGem() {
-    if (!coords) return;
-    if (!newNote.trim()) return;
-
-    setSavingGem(true);
-    try {
-      const form = new FormData();
-      form.append("lat", String(coords.lat));
-      form.append("lng", String(coords.lng));
-      form.append("note", newNote.trim());
-      if (newPhoto) form.append("photo", newPhoto);
-
-      const res = await fetch("/api/gems", { method: "POST", body: form });
-      if (!res.ok) throw new Error("Failed to create gem");
-      const data = await res.json();
-
-      if (data?.gem) setGems((prev) => [data.gem, ...prev]);
-
-      setNewNote("");
-      setNewPhoto(null);
-      setAddOpen(false);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setSavingGem(false);
-    }
+    route.push("/takePhoto");
   }
 
   return (
@@ -171,9 +134,9 @@ export default function LocalGemsMap() {
         <div className="rounded-full bg-white/90 px-4 py-2 shadow-sm ring-1 ring-black/5">
           <div className="text-xs text-gray-500">Current location</div>
           <div className="text-sm font-medium text-gray-900">
-            {coords
-              ? `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`
-              : geoErr
+            {location
+              ? `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`
+              : geolocationError
                 ? "Location unavailable"
                 : "Locating..."}
           </div>
@@ -213,12 +176,15 @@ export default function LocalGemsMap() {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
-          {coords && (
+          {location && (
             <>
-              <Marker position={[coords.lat, coords.lng]}>
+              <Marker position={[location.lat, location.lng]}>
                 <Popup>You are here</Popup>
               </Marker>
-              <Circle center={[coords.lat, coords.lng]} radius={rangeMeters} />
+              <Circle
+                center={[location.lat, location.lng]}
+                radius={rangeMeters}
+              />
             </>
           )}
 
@@ -361,13 +327,13 @@ export default function LocalGemsMap() {
 
             <button
               onClick={submitNewGem}
-              disabled={savingGem || !coords || !newNote.trim()}
+              disabled={savingGem || !location || !newNote.trim()}
               className="mt-5 w-full rounded-xl bg-gray-900 py-2.5 text-sm font-medium text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
             >
               {savingGem ? "Posting..." : "Post Gem"}
             </button>
 
-            {!coords && (
+            {!location && (
               <div className="mt-3 text-xs text-gray-500">
                 Location is required to post a gem.
               </div>

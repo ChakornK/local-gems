@@ -1,14 +1,16 @@
 import mongoose from "mongoose";
 
 const PostSchema = new mongoose.Schema({
-  createdAt: Date,
+  createdAt: { type: Date, default: Date.now },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   description: String,
   image: String,
   lat: Number,
   lng: Number,
+  likes: { type: Number, default: 0 },
 });
 
-export const POSTS_RADIUS = 5000; // 5km
+export const MAX_POSTS_RADIUS = 5000; // 5km
 
 export default mongoose.models.Post ||
   mongoose.model("Post", PostSchema, "post");

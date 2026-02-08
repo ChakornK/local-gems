@@ -4,13 +4,14 @@ import Post from "@/models/Post";
 import { NextResponse } from "next/server";
 import { uploadToS3 } from "@/lib/s3";
 
-import { cacheData } from "@/lib/redisAdapter";
-import { POSTS_RADIUS } from "@/models/Post";
+import { cacheData, getUser } from "@/lib/redisAdapter";
+import { MAX_POSTS_RADIUS } from "@/models/Post";
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const lat = parseFloat(searchParams.get("lat"));
   const lng = parseFloat(searchParams.get("lng"));
+  const radiusMeters = parseFloat(searchParams.get("radiusMeters"));
 
   if (isNaN(lat) || isNaN(lng)) {
     return NextResponse.json(
@@ -27,6 +28,8 @@ export async function GET(req) {
   // Round coordinates to ~110m precision (3 decimal places) for caching "similar" locations
   const cacheKey = `posts:nearby:${lat.toFixed(3)}:${lng.toFixed(3)}`;
 
+  // const radius = Math.min(radiusMeters, MAX_POSTS_RADIUS);
+  const radius = 1000000;
   try {
     const posts = await cacheData(
       cacheKey,
@@ -34,9 +37,8 @@ export async function GET(req) {
         // Simple bounding box calculation
         // 1 degree lat ~= 111km
         // 1 degree lng ~= 111km * cos(lat)
-        const latDelta = POSTS_RADIUS / 111000;
-        const lngDelta =
-          POSTS_RADIUS / (111000 * Math.cos(lat * (Math.PI / 180)));
+        const latDelta = radius / 111000;
+        const lngDelta = radius / (111000 * Math.cos(lat * (Math.PI / 180)));
 
         return await Post.find({
           lat: { $gte: lat - latDelta, $lte: lat + latDelta },
@@ -63,6 +65,10 @@ export async function POST(req) {
   const s = await session();
   if (!s) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const user = await getUser(s.session.userId);
+  if (!user)
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+
   const formData = await req.formData();
   const file = formData.get("image");
   const lat = parseFloat(formData.get("lat"));
@@ -81,7 +87,7 @@ export async function POST(req) {
     const buffer = Buffer.from(bytes);
 
     // Generate unique filename
-    const fileName = `posts/${Date.now()}-${file.name.replace(
+    const fileName = `img/${Date.now()}-${file.name.replace(
       /[^a-zA-Z0-9.-]/g,
       "",
     )}`;
@@ -95,7 +101,7 @@ export async function POST(req) {
       lat,
       lng,
       description,
-      createdAt: new Date(),
+      createdBy: user._id,
     });
 
     return NextResponse.json(newPost);

@@ -1,5 +1,6 @@
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
+import { GeolocationProvider } from "@/context/GeolocationContext";
 
 export const metadata = {
   title: "Local Gems",
@@ -21,7 +22,9 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <GeolocationProvider>{children}</GeolocationProvider>
+      </body>
     </html>
   );
 }
