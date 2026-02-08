@@ -10,6 +10,7 @@ export default function CameraWithEditor() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const router = useRouter();
+  const [videoStream, setVideoStream] = useState(null);
 
   const [capturedImage, setCapturedImage] = useState(null);
   const [editedImage, setEditedImage] = useState(null);
@@ -17,22 +18,39 @@ export default function CameraWithEditor() {
     width: 360,
     height: 640,
   });
-  const [cameraRunning, setCameraRunning] = useState(false);
 
   // --- CAMERA LOGIC ---
+  const stopStreams = () => {
+    try {
+      videoStream.getTracks().forEach((t) => t.stop());
+    } catch {}
+  };
   const startCamera = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "environment",
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-        },
-        audio: false,
-      });
+      await navigator.mediaDevices.getUserMedia({ video: true });
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cams = devices.filter((d) => d.kind === "videoinput");
+      const backCamId = cams.find((c) => c.label.includes("back:0"))?.deviceId;
+      const stream = await navigator.mediaDevices.getUserMedia(
+        backCamId
+          ? {
+              video: {
+                deviceId: {
+                  exact: backCamId,
+                },
+              },
+            }
+          : {
+              video: {
+                facingMode: "environment",
+                width: { ideal: 1080 },
+                height: { ideal: 1920 },
+              },
+            },
+      );
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        setCameraRunning(true);
+        stopStreams();
+        setVideoStream(stream);
       }
     } catch (err) {
       console.error(`Camera Error: ${err.message}`);
@@ -40,13 +58,21 @@ export default function CameraWithEditor() {
   }, []);
 
   useEffect(() => {
-    if (!capturedImage && !editedImage) startCamera();
+    if (!capturedImage && !editedImage) {
+      startCamera();
+    } else {
+      stopStreams();
+    }
     return () => {
-      if (videoRef.current?.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach((t) => t.stop());
-      }
+      stopStreams();
     };
   }, [capturedImage, editedImage, startCamera]);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.srcObject = videoStream;
+    }
+  }, [videoRef.current]);
 
   function handleCanPlay() {
     if (videoRef.current) {
@@ -92,33 +118,39 @@ export default function CameraWithEditor() {
     context.drawImage(video, sX, sY, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
 
     setCapturedImage(canvas.toDataURL("image/png"));
-    setCameraRunning(false);
   }
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-slate-950 text-slate-50">
       {/* 1. Camera View */}
       {!capturedImage && !editedImage && (
-        <div className="relative h-full w-full bg-black">
-          <video
-            ref={videoRef}
-            onCanPlay={handleCanPlay}
-            playsInline
-            autoPlay
-            muted
-            className="absolute inset-0 h-full w-full object-cover"
-          />
+        <div className="flex h-full w-full flex-col items-center bg-black">
+          <div className="aspect-9/16 relative grow overflow-clip rounded-xl">
+            <video
+              ref={videoRef}
+              onCanPlay={handleCanPlay}
+              playsInline
+              autoPlay
+              muted
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          </div>
+          <div className="min-h-32 flex shrink-0 items-center justify-center bg-black">
+            <button
+              onClick={capturePicture}
+              className="group h-20 w-20 rounded-full border-4 border-white transition active:scale-95"
+            >
+              <div className="h-full w-full scale-105 rounded-full bg-white transition group-active:scale-75 group-active:bg-white/50"></div>
+            </button>
+          </div>
+          <canvas ref={canvasRef} className="hidden" />
+
           <button
-            onClick={() => router.push("/components/")}
+            onClick={() => router.push("/")}
             className="absolute left-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white"
           >
             ✕
           </button>
-          <button
-            onClick={capturePicture}
-            className="absolute bottom-12 left-1/2 z-10 h-20 w-20 -translate-x-1/2 rounded-full border-4 border-white bg-white/20 transition active:scale-95"
-          />
-          <canvas ref={canvasRef} className="hidden" />
         </div>
       )}
 
