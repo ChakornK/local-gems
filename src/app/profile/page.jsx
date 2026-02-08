@@ -184,14 +184,14 @@ export default function ProfilePage() {
         {/* Grid Gallery */}
         <div className="grid grid-cols-2 gap-4">
           {myposts.map((post) => (
-            <div key={post.id} className="group relative aspect-[3/4] overflow-hidden rounded-xl bg-slate-800">
+            <div key={post.id} className="aspect-3/4 group relative overflow-hidden rounded-xl bg-slate-800">
               <Image
                 src={post.image}
                 alt={post.title}
                 fill
                 className="object-cover transition-transform group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-90" />
+              <div className="bg-linear-to-t absolute inset-0 from-black/80 via-transparent to-transparent opacity-90" />
               <div className="absolute bottom-3 left-3 right-3">
                 <h3 className="truncate text-sm font-bold text-white">{post.title}</h3>
                 <div className="mt-1 flex items-center gap-1 text-xs text-slate-300">

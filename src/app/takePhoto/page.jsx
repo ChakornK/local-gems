@@ -404,7 +404,7 @@ function InfoEditor({ imageUrl, onBack }) {
       </div>
 
       <div className="flex h-1/6 w-full justify-center overflow-hidden bg-black">
-        <img src={imageUrl} alt="Preview" className="aspect-[9/16] h-full object-contain" />
+        <img src={imageUrl} alt="Preview" className="aspect-9/16 h-full object-contain" />
       </div>
 
       <div className="mt-4 flex flex-1 flex-col gap-6 rounded-t-3xl border-t border-slate-800 bg-slate-900 p-6">
