@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 import GemDetails from "./GemDetails";
 import BottomSheet from "./BottomSheet";
+import ClusterList from "./ClusterList";
 
 const MapContainer = dynamic(async () => (await import("react-leaflet")).MapContainer, { ssr: false });
 const TileLayer = dynamic(async () => (await import("react-leaflet")).TileLayer, { ssr: false });
@@ -17,6 +18,9 @@ const Popup = dynamic(async () => (await import("react-leaflet")).Popup, {
   ssr: false,
 });
 const Circle = dynamic(async () => (await import("react-leaflet")).Circle, {
+  ssr: false,
+});
+const MarkerClusterGroup = dynamic(async () => (await import("@/components/GemClusterGroup")).default, {
   ssr: false,
 });
 
@@ -46,21 +50,37 @@ export default function LocalGemsMap({ initialGemId }) {
     }
   }, [initialGemId]);
 
+  const [clusterGems, setClusterGems] = useState(null);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     (async () => {
       const L = (await import("leaflet")).default;
 
-      const markerIcon2x = (await import("leaflet/dist/images/marker-icon-2x.png")).default;
-      const markerIcon = (await import("leaflet/dist/images/marker-icon.png")).default;
-      const markerShadow = (await import("leaflet/dist/images/marker-shadow.png")).default;
+      // const markerIcon2x = (await import("leaflet/dist/images/marker-icon-2x.png")).default;
+      // const markerIcon = (await import("leaflet/dist/images/marker-icon.png")).default;
+      // const markerShadow = (await import("leaflet/dist/images/marker-shadow.png")).default;
 
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: markerIcon2x.src ?? markerIcon2x,
-        iconUrl: markerIcon.src ?? markerIcon,
-        shadowUrl: markerShadow.src ?? markerShadow,
+      // L.Icon.Default.mergeOptions({
+      //   iconRetinaUrl: markerIcon2x.src ?? markerIcon2x,
+      //   iconUrl: markerIcon.src ?? markerIcon,
+      //   shadowUrl: markerShadow.src ?? markerShadow,
+      // });
+      const customPin = L.divIcon({
+        html: `
+<div class="relative flex items-center justify-center text-blue-400" style="width: 40px; height: 48px;">
+  <svg viewBox="0 0 24 24" class="drop-shadow-black/50 absolute inset-0 h-full w-full drop-shadow" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="currentColor" />
+  </svg>
+  <div class="z-201 absolute left-1/2 top-[16px] flex h-[8px] w-[8px] -translate-x-1/2 items-center justify-center rounded-full bg-white"></div>
+</div>
+              `,
+        className: "custom-clustericon",
+        iconSize: L.point(40, 48),
+        iconAnchor: [20, 48],
       });
+      L.Marker.prototype.options.icon = customPin;
     })();
   }, []);
 
@@ -126,15 +146,30 @@ export default function LocalGemsMap({ initialGemId }) {
             </>
           )}
 
-          {gems.map((g) => (
-            <Marker
-              key={g._id}
-              position={[g.lat, g.lng]}
-              eventHandlers={{
-                click: () => routeTo(`/gem/${g._id}`),
-              }}
-            />
-          ))}
+          <MarkerClusterGroup
+            chunkedLoading
+            maxClusterRadius={60}
+            spiderfyOnMaxZoom={false}
+            showCoverageOnHover={false}
+            zoomToBoundsOnClick={false}
+            onClusterClick={(cluster) => {
+              const markers = cluster.layer.getAllChildMarkers();
+              const gemIds = markers.map((m) => m.options.gemId);
+              const selectedGems = gems.filter((g) => gemIds.includes(g._id));
+              setClusterGems(selectedGems);
+            }}
+          >
+            {gems.map((g) => (
+              <Marker
+                key={g._id}
+                position={[g.lat, g.lng]}
+                gemId={g._id}
+                eventHandlers={{
+                  click: () => routeTo(`/gem/${g._id}`),
+                }}
+              />
+            ))}
+          </MarkerClusterGroup>
         </MapContainer>
       </div>
 
@@ -268,6 +303,20 @@ export default function LocalGemsMap({ initialGemId }) {
             router.push("/", { scroll: false });
           }}
         />
+      </BottomSheet>
+
+      {/* Cluster List BottomSheet */}
+      <BottomSheet open={!!clusterGems} onClose={() => setClusterGems(null)}>
+        {clusterGems && (
+          <ClusterList
+            gems={clusterGems}
+            onClose={() => setClusterGems(null)}
+            onGemClick={(gem) => {
+              setClusterGems(null);
+              routeTo(`/gem/${gem._id}`);
+            }}
+          />
+        )}
       </BottomSheet>
     </div>
   );
