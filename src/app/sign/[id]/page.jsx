@@ -83,7 +83,7 @@ export default function SignDetailsPage({ params }) {
                     <button className="flex-1 bg-blue-500 text-white py-3 rounded-xl font-medium active:scale-95 transition-transform">
                         Like ({sign.likes})
                     </button>
-                    <button className="flex-1 bg-slate-800 text-white py-3 rounded-xl font-medium active:scale-95 transition-transform">
+                    <button className="flex-1 bg-slate-700 text-white py-3 rounded-xl font-medium active:scale-95 transition-transform">
                         Share
                     </button>
                 </div>
