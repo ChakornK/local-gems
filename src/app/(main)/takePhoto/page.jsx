@@ -366,7 +366,25 @@ function KonvaEditor({ imageUrl, width, height, onBack, onNext }) {
 
   return (
     <div className="relative flex h-screen w-screen flex-col items-center justify-center overflow-hidden bg-black">
-      <Stage width={winSize.w} height={winSize.h} ref={stageRef} onClick={() => setSelectedTextId(null)}>
+      <Stage
+        width={winSize.w}
+        height={winSize.h}
+        ref={stageRef}
+        onClick={() => {
+          if (isEditing) {
+            saveText();
+          } else {
+            setSelectedTextId(null);
+          }
+        }}
+        onTap={() => {
+          if (isEditing) {
+            saveText();
+          } else {
+            setSelectedTextId(null);
+          }
+        }}
+      >
         <Layer>
           {image && (
             <KonvaImage
