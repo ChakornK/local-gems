@@ -8,7 +8,7 @@ import {
   Image as KonvaImage,
   Transformer,
 } from "react-konva";
-import { useRef, useState, useEffect, Fragment } from "react";
+import { useRef, useState, useEffect, Fragment, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import useImage from "use-image";
 
@@ -17,226 +17,167 @@ export default function CameraWithEditor() {
   const canvasRef = useRef(null);
   const router = useRouter();
 
-  // State to hold the captured image data URL
   const [capturedImage, setCapturedImage] = useState(null);
-  const [videoDimensions, setVideoDimensions] = useState({
-    width: 360,
-    height: 640,
-  });
+  const [editedImage, setEditedImage] = useState(null);
+  const [videoDimensions, setVideoDimensions] = useState({ width: 360, height: 640 });
   const [cameraRunning, setCameraRunning] = useState(false);
 
   // --- CAMERA LOGIC ---
-  function givePermission() {
-    navigator.mediaDevices
-      .getUserMedia({
-        video: {
-          width: { ideal: 4096 },
-          height: { ideal: 4096 },
-        },
+  const startCamera = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
         audio: false,
-      })
-      .then((stream) => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play();
-          setCameraRunning(true);
-        }
-      })
-      .catch((err) => console.error(`Error: ${err}`));
-  }
-
-  // Auto-request camera permission on mount
-  useEffect(() => {
-    givePermission();
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setCameraRunning(true);
+      }
+    } catch (err) {
+      console.error(`Camera Error: ${err.message}`);
+    }
   }, []);
+
+  useEffect(() => {
+    if (!capturedImage && !editedImage) startCamera();
+    return () => {
+      if (videoRef.current?.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+      }
+    };
+  }, [capturedImage, editedImage, startCamera]);
 
   function handleCanPlay() {
     if (videoRef.current) {
-      // Get the actual video dimensions from the camera
-      const videoWidth = videoRef.current.videoWidth;
-      const videoHeight = videoRef.current.videoHeight;
-
-      // Calculate maximum dimensions maintaining 9:16 aspect ratio
-      const videoAspectRatio = videoWidth / videoHeight;
-      const targetAspectRatio = 9 / 16;
+      const vWidth = videoRef.current.videoWidth;
+      const vHeight = videoRef.current.videoHeight;
+      const targetRatio = 9 / 16;
       let width, height;
 
-      if (videoAspectRatio > targetAspectRatio) {
-        // Video is wider than 9:16, use full height
-        height = videoHeight;
-        width = Math.floor(height * targetAspectRatio);
+      if (vWidth / vHeight > targetRatio) {
+        height = vHeight;
+        width = Math.floor(height * targetRatio);
       } else {
-        // Video is taller than 9:16, use full width
-        width = videoWidth;
-        height = Math.floor(width / targetAspectRatio);
+        width = vWidth;
+        height = Math.floor(width / targetRatio);
       }
-
       setVideoDimensions({ width, height });
+      videoRef.current.play().catch(console.error);
     }
   }
 
   function capturePicture() {
-    const canvas = canvasRef.current;
     const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+
     const context = canvas.getContext("2d");
+    const targetRatio = 9 / 16;
+    let sWidth = video.videoWidth;
+    let sHeight = video.videoHeight;
+    let sX = 0, sY = 0;
 
-    if (videoDimensions.width && videoDimensions.height) {
-      canvas.width = videoDimensions.width;
-      canvas.height = videoDimensions.height;
-
-      // Calculate crop to maintain 9:16 aspect ratio
-      const videoAspectRatio = video.videoWidth / video.videoHeight;
-      const targetAspectRatio = 9 / 16;
-      let sourceX = 0,
-        sourceY = 0,
-        sourceWidth = video.videoWidth,
-        sourceHeight = video.videoHeight;
-
-      if (videoAspectRatio > targetAspectRatio) {
-        // Video is wider, crop sides
-        sourceWidth = video.videoHeight * targetAspectRatio;
-        sourceX = (video.videoWidth - sourceWidth) / 2;
-      } else {
-        // Video is taller, crop top/bottom
-        sourceHeight = video.videoWidth / targetAspectRatio;
-        sourceY = (video.videoHeight - sourceHeight) / 2;
-      }
-
-      context.drawImage(
-        video,
-        sourceX,
-        sourceY,
-        sourceWidth,
-        sourceHeight,
-        0,
-        0,
-        videoDimensions.width,
-        videoDimensions.height,
-      );
-
-      // Save the image to state
-      const data = canvas.toDataURL("image/png");
-      setCapturedImage(data);
-
-      // Stop the camera stream to save resources
-      const stream = video.srcObject;
-      const tracks = stream.getTracks();
-      tracks.forEach((track) => track.stop());
-      setCameraRunning(false);
+    if (sWidth / sHeight > targetRatio) {
+      sWidth = sHeight * targetRatio;
+      sX = (video.videoWidth - sWidth) / 2;
+    } else {
+      sHeight = sWidth / targetRatio;
+      sY = (video.videoHeight - sHeight) / 2;
     }
+
+    canvas.width = videoDimensions.width;
+    canvas.height = videoDimensions.height;
+    context.drawImage(video, sX, sY, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
+
+    setCapturedImage(canvas.toDataURL("image/png"));
+    setCameraRunning(false);
   }
 
-  // --- RENDERING LOGIC ---
   return (
-    <div className="relative flex h-screen w-screen flex-col overflow-hidden bg-slate-950 text-slate-50">
-      {!capturedImage ? (
-        <div className="relative flex h-full w-full flex-col items-center justify-center bg-slate-950">
-          <video
-            ref={videoRef}
-            onCanPlay={handleCanPlay}
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-          <button
-            onClick={() => router.push("/components/")}
-            className="absolute left-4 top-4 z-10 flex h-10 w-10 items-center justify-center text-2xl font-bold text-white transition hover:opacity-70"
-            title="Back"
-          >
-            ✕
-          </button>
-          <button
-            onClick={givePermission}
-            style={{ display: cameraRunning ? "none" : "flex" }}
-            className="absolute right-4 top-4 z-10 rounded-lg bg-slate-600 px-4 py-2 font-semibold text-slate-50 transition hover:bg-slate-700"
-          >
-            Start Camera
-          </button>
-          <button
-            onClick={capturePicture}
-            className="absolute bottom-8 left-1/2 z-10 flex h-24 w-24 -translate-x-1/2 transform items-center justify-center rounded-full border-4 border-white bg-white transition hover:bg-slate-100"
-            title="Take Photo"
-          ></button>
-          <canvas ref={canvasRef} style={{ display: "none" }} />
+    <div className="relative h-screen w-screen bg-slate-950 overflow-hidden text-slate-50">
+      {/* 1. Camera View */}
+      {!capturedImage && !editedImage && (
+        <div className="relative h-full w-full bg-black">
+          <video ref={videoRef} onCanPlay={handleCanPlay} playsInline autoPlay muted className="absolute inset-0 h-full w-full object-cover" />
+          <button onClick={() => router.push("/components/")} className="absolute left-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white">✕</button>
+          <button onClick={capturePicture} className="absolute bottom-12 left-1/2 z-10 h-20 w-20 -translate-x-1/2 rounded-full border-4 border-white bg-white/20 active:scale-95 transition" />
+          <canvas ref={canvasRef} className="hidden" />
         </div>
-      ) : (
+      )}
+
+      {/* 2. Konva Editor View */}
+      {capturedImage && !editedImage && (
         <KonvaEditor
           imageUrl={capturedImage}
           width={videoDimensions.width}
           height={videoDimensions.height}
-          reset={() => setCapturedImage(null)}
+          onBack={() => setCapturedImage(null)}
+          onNext={(data) => setEditedImage(data)}
         />
+      )}
+
+      {/* 3. Info Editor View */}
+      {editedImage && (
+        <InfoEditor imageUrl={editedImage} onBack={() => setEditedImage(null)} />
       )}
     </div>
   );
 }
 
-function KonvaEditor({ imageUrl, width, height, reset }) {
+// --- EDITOR COMPONENT (Integrated with your Text logic) ---
+function KonvaEditor({ imageUrl, width, height, onBack, onNext }) {
   const stageRef = useRef(null);
-  const [textItems, setTextItems] = useState([]);
-  const [activeTextId, setActiveTextId] = useState(null);
-  const [editingText, setEditingText] = useState("");
-  const [editInputPos, setEditInputPos] = useState({ x: 0, y: 0 });
-  const [selectedTextId, setSelectedTextId] = useState(null);
-  const [image] = useImage(imageUrl);
   const inputRef = useRef(null);
   const textRefs = useRef({});
   const transformerRefs = useRef({});
+  
+  const [image] = useImage(imageUrl);
+  const [textItems, setTextItems] = useState([]);
+  const [activeTextId, setActiveTextId] = useState(null);
+  const [editingText, setEditingText] = useState("");
+  const [selectedTextId, setSelectedTextId] = useState(null);
 
+  // Responsive stage sizing
+  const [winSize, setWinSize] = useState({ w: 0, h: 0 });
   useEffect(() => {
-    if (
-      selectedTextId &&
-      transformerRefs.current[selectedTextId] &&
-      textRefs.current[selectedTextId]
-    ) {
-      const textNode = textRefs.current[selectedTextId];
+    const handleResize = () => setWinSize({ w: window.innerWidth, h: window.innerHeight });
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const scaleToFitWidth = winSize.w / width;
+  const scaledHeight = height * scaleToFitWidth;
+  const finalScale = scaledHeight > winSize.h ? winSize.h / height : scaleToFitWidth;
+
+  // Transformer logic
+  useEffect(() => {
+    if (selectedTextId && transformerRefs.current[selectedTextId] && textRefs.current[selectedTextId]) {
+      const node = textRefs.current[selectedTextId];
       const transformer = transformerRefs.current[selectedTextId];
-      transformer.nodes([textNode]);
+      transformer.nodes([node]);
       transformer.getLayer().batchDraw();
     }
   }, [selectedTextId]);
-
-  const { location, loading, error } = useGeolocation();
 
   const addTextAtPosition = (x, y) => {
     const newId = Date.now().toString();
     setActiveTextId(newId);
     setEditingText("");
-    setEditInputPos({ x, y });
-    setTextItems([
-      ...textItems,
-      {
-        id: newId,
-        text: "",
-        x: x,
-        y: y,
-        scaleX: 1,
-        scaleY: 1,
-        rotation: 0,
-        fontSize: 48,
-        textColor: "white",
-        finalized: false,
-      },
-    ]);
+    setTextItems([...textItems, {
+      id: newId, text: "", x, y, scaleX: 1, scaleY: 1, rotation: 0, fontSize: 48, textColor: "white", finalized: false,
+    }]);
     setTimeout(() => inputRef.current?.focus(), 0);
-  };
-
-  const handleCanvasClick = (e) => {
-    // Only used for selecting/deselecting, not for adding text
-    setSelectedTextId(null);
   };
 
   const finishEditingText = () => {
     if (activeTextId) {
-      setTextItems(
-        textItems.map((item) => {
-          if (item.id === activeTextId) {
-            // Reset fontSize to 24 if empty when finishing
-            const fontSize =
-              item.fontSize === "" || item.fontSize === 0 ? 24 : item.fontSize;
-            return { ...item, text: editingText, fontSize, finalized: true };
-          }
-          return item;
-        }),
-      );
+      setTextItems(textItems.map((item) => {
+        if (item.id === activeTextId) {
+          return { ...item, text: editingText, fontSize: item.fontSize || 24, finalized: true };
+        }
+        return item;
+      }));
       setActiveTextId(null);
       setEditingText("");
     }
@@ -245,379 +186,137 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
   const editExistingText = (id, text, x, y) => {
     setActiveTextId(id);
     setEditingText(text);
-    setEditInputPos({ x, y });
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
-  const deleteText = (id) => {
-    setTextItems(textItems.filter((item) => item.id !== id));
-    if (activeTextId === id) {
-      setActiveTextId(null);
-      setEditingText("");
-    }
-  };
-
-  const handleTextDragEnd = (id, e) => {
-    const newX = e.target.x();
-    const newY = e.target.y();
-    setTextItems(
-      textItems.map((item) =>
-        item.id === id ? { ...item, x: newX, y: newY } : item,
-      ),
-    );
-    if (activeTextId === id) {
-      setEditInputPos({ x: newX, y: newY });
-    }
-  };
-
-  const handleTextTransformEnd = (id) => {
-    const textNode = textRefs.current[id];
-    if (!textNode) return;
-
-    const scaleX = textNode.scaleX();
-    const scaleY = textNode.scaleY();
-    const rotation = textNode.rotation();
-    const x = textNode.x();
-    const y = textNode.y();
-
-    setTextItems(
-      textItems.map((item) =>
-        item.id === id ? { ...item, x, y, scaleX, scaleY, rotation } : item,
-      ),
-    );
-  };
-
-  const handleInputChange = (e) => {
-    const newText = e.target.value;
-    setEditingText(newText);
-    if (activeTextId) {
-      setTextItems(
-        textItems.map((item) =>
-          item.id === activeTextId ? { ...item, text: newText } : item,
-        ),
-      );
-    }
-  };
-
-  const handleDownload = () => {
-    finishEditingText();
-    setTimeout(() => {
-      const uri = stageRef.current.toDataURL();
-      const link = document.createElement("a");
-      link.download = "my-edit.png";
-      link.href = uri;
-      link.click();
-    }, 0);
-  };
-
-  function handleUploadImage() {
-    finishEditingText();
-    if (loading) alert("Please wait for geolocation to load.");
-    setTimeout(() => {
-      const stage = stageRef.current;
-      stage.toBlob().then((blob) => {
-        if (!blob) {
-          console.error("Failed to convert canvas to blob");
-          return;
-        }
-
-        const formData = new FormData();
-        formData.append("image", blob, "edited-image.png");
-        formData.append("lat", location.lat.toString());
-        formData.append("lng", location.lng.toString());
-        formData.append("description", "");
-
-        fetch("/api/image", {
-          method: "POST",
-          body: formData,
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            console.log("Upload successful:", data);
-          })
-          .catch((error) => {
-            console.error("Upload error:", error);
-          });
-      });
-    }, 0);
-  }
-
-  // Calculate scale to fit image to screen width while maintaining aspect ratio
-  const [stageWidth, setStageWidth] = useState(
-    typeof window !== "undefined" ? window.innerWidth : 360,
-  );
-  const [stageHeight, setStageHeight] = useState(
-    typeof window !== "undefined" ? window.innerHeight : 640,
-  );
-
-  useEffect(() => {
-    const handleResize = () => {
-      setStageWidth(window.innerWidth);
-      setStageHeight(window.innerHeight);
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const scaleToFitWidth = stageWidth / width;
-  const scaledHeight = height * scaleToFitWidth;
-  const finalScale =
-    scaledHeight > stageHeight ? stageHeight / height : scaleToFitWidth;
-
   return (
-    <div className="relative flex h-screen w-screen flex-col overflow-hidden bg-slate-950 text-slate-50">
-      {/* Image Editor - Full screen */}
-      <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-        <Stage
-          width={stageWidth}
-          height={stageHeight}
-          ref={stageRef}
-          onClick={handleCanvasClick}
-          style={{
-            display: "block",
-            position: "absolute",
-            top: 0,
-            left: 0,
-          }}
-        >
-          <Layer>
-            {image && (
-              <KonvaImage
-                image={image}
-                width={width}
-                height={height}
-                x={(stageWidth - width * finalScale) / 2 / finalScale}
-                y={(stageHeight - height * finalScale) / 2 / finalScale}
-                scaleX={finalScale}
-                scaleY={finalScale}
+    <div className="relative flex h-screen w-screen flex-col items-center justify-center bg-black overflow-hidden">
+      <Stage
+        width={winSize.w}
+        height={winSize.h}
+        ref={stageRef}
+        onClick={() => setSelectedTextId(null)}
+      >
+        <Layer>
+          {image && (
+            <KonvaImage
+              image={image}
+              width={width}
+              height={height}
+              x={(winSize.w - width * finalScale) / 2 / finalScale}
+              y={(winSize.h - height * finalScale) / 2 / finalScale}
+              scaleX={finalScale}
+              scaleY={finalScale}
+            />
+          )}
+          {textItems.map((item) => (
+            <Fragment key={item.id}>
+              <Text
+                ref={(el) => { if (el) textRefs.current[item.id] = el; }}
+                name={item.id}
+                text={item.text}
+                x={item.x} y={item.y}
+                scaleX={item.scaleX} scaleY={item.scaleY}
+                rotation={item.rotation}
+                draggable
+                fontSize={item.fontSize}
+                fill={item.textColor || "white"}
+                stroke="black" strokeWidth={1}
+                onClick={(e) => {
+                  e.cancelBubble = true;
+                  setSelectedTextId(item.id);
+                  editExistingText(item.id, item.text, item.x, item.y);
+                }}
+                onDragEnd={(e) => {
+                  setTextItems(textItems.map(t => t.id === item.id ? { ...t, x: e.target.x(), y: e.target.y() } : t));
+                }}
               />
-            )}
-            {textItems.map((item) => (
-              <Fragment key={item.id}>
-                <Text
-                  ref={(el) => {
-                    if (el) textRefs.current[item.id] = el;
-                  }}
-                  name={item.id}
-                  text={item.text}
-                  x={item.x}
-                  y={item.y}
-                  scaleX={item.scaleX}
-                  scaleY={item.scaleY}
-                  rotation={item.rotation}
-                  draggable
-                  fontSize={item.fontSize}
-                  fill={item.textColor || "white"}
-                  stroke="black"
-                  strokeWidth={1}
-                  onClick={() => {
-                    setSelectedTextId(item.id);
-                    editExistingText(item.id, item.text, item.x, item.y);
-                  }}
-                  onDragEnd={(e) => handleTextDragEnd(item.id, e)}
-                  onMouseEnter={(e) => {
-                    e.target.to({
-                      opacity: 0.8,
-                      duration: 0.1,
-                    });
-                    document.body.style.cursor = "pointer";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.to({
-                      opacity: 1,
-                      duration: 0.1,
-                    });
-                    document.body.style.cursor = "default";
+              {selectedTextId === item.id && (
+                <Transformer
+                  ref={(el) => { if (el) transformerRefs.current[item.id] = el; }}
+                  onTransformEnd={() => {
+                    const node = textRefs.current[item.id];
+                    setTextItems(textItems.map(t => t.id === item.id ? {
+                      ...t, x: node.x(), y: node.y(), scaleX: node.scaleX(), scaleY: node.scaleY(), rotation: node.rotation()
+                    } : t));
                   }}
                 />
-                {selectedTextId === item.id && (
-                  <Transformer
-                    ref={(el) => {
-                      if (el) transformerRefs.current[item.id] = el;
-                    }}
-                    onTransformEnd={() => handleTextTransformEnd(item.id)}
-                    onTransform={() => {
-                      const textNode = textRefs.current[item.id];
-                      if (textNode) {
-                        setTextItems((prevItems) =>
-                          prevItems.map((textItem) =>
-                            textItem.id === item.id
-                              ? {
-                                  ...textItem,
-                                  x: textNode.x(),
-                                  y: textNode.y(),
-                                  scaleX: textNode.scaleX(),
-                                  scaleY: textNode.scaleY(),
-                                  rotation: textNode.rotation(),
-                                }
-                              : textItem,
-                          ),
-                        );
-                      }
-                    }}
-                    rotateEnabled={true}
-                    resizeEnabled={true}
-                    enabledAnchors={[
-                      "top-left",
-                      "top-center",
-                      "top-right",
-                      "middle-right",
-                      "middle-left",
-                      "bottom-left",
-                      "bottom-center",
-                      "bottom-right",
-                    ]}
-                    boundBoxFunc={(oldBox, newBox) => newBox}
-                  />
-                )}
-              </Fragment>
-            ))}
-          </Layer>
-        </Stage>
+              )}
+            </Fragment>
+          ))}
+        </Layer>
+      </Stage>
+
+      {/* UI Overlay */}
+      <div className="absolute left-4 top-4 z-20"><button onClick={onBack} className="h-10 w-10 rounded-full bg-black/50 text-white">✕</button></div>
+      <div className="absolute right-4 top-4 z-20 flex gap-2">
+        <button onClick={() => addTextAtPosition(winSize.w/2 - 50, winSize.h/2)} className="h-10 w-10 rounded-full bg-black/50 text-xl font-bold">+</button>
+        <button onClick={() => { setSelectedTextId(null); finishEditingText(); setTimeout(() => onNext(stageRef.current.toDataURL()), 100); }} className="px-6 rounded-full bg-blue-600 font-bold">Next</button>
       </div>
 
-      {/* Floating Text Controls - Top */}
+      {/* Text Editing Panel */}
       {activeTextId !== null && (
-        <div className="absolute left-4 right-4 top-20 z-20 max-h-64 overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 bg-opacity-40 backdrop-blur-sm">
-          {/* Text Editing Input */}
-          {activeTextId !== null && (
-            <div className="border-b border-slate-700 px-4 py-3">
-              <label className="mb-2 block text-xs font-semibold uppercase text-slate-400">
-                Edit Text
-              </label>
-              <div className="mb-2 flex gap-2">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={editingText}
-                  onChange={handleInputChange}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") finishEditingText();
-                  }}
-                  className="flex-1 rounded-lg border border-slate-700 bg-slate-800 p-2 text-sm text-slate-50 focus:border-slate-500 focus:outline-none"
-                  placeholder="Enter text..."
-                />
-                <div className="flex items-center gap-1">
-                  <label className="whitespace-nowrap text-xs font-semibold uppercase text-slate-400">
-                    Size:
-                  </label>
-                  <input
-                    type="text"
-                    value={
-                      textItems.find((item) => item.id === activeTextId)
-                        ?.fontSize || ""
-                    }
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const newSize = parseInt(val);
-                      if (val === "" || !isNaN(newSize)) {
-                        // Allow any value while typing
-                        setTextItems(
-                          textItems.map((item) =>
-                            item.id === activeTextId
-                              ? { ...item, fontSize: val === "" ? "" : newSize }
-                              : item,
-                          ),
-                        );
-                      }
-                    }}
-                    className="w-16 rounded-lg border border-slate-700 bg-slate-800 p-2 text-sm text-slate-50 focus:border-slate-500 focus:outline-none"
-                    placeholder="24"
-                  />
-                </div>
-                <div className="flex items-center gap-1">
-                  <label className="whitespace-nowrap text-xs font-semibold uppercase text-slate-400">
-                    Color:
-                  </label>
-                  <input
-                    type="color"
-                    value={
-                      textItems.find((item) => item.id === activeTextId)
-                        ?.textColor || "#ffffff"
-                    }
-                    onChange={(e) => {
-                      setTextItems(
-                        textItems.map((item) =>
-                          item.id === activeTextId
-                            ? { ...item, textColor: e.target.value }
-                            : item,
-                        ),
-                      );
-                    }}
-                    className="h-10 w-10 cursor-pointer rounded-lg border border-slate-700 bg-slate-800 p-1"
-                  />
-                </div>
+        <div className="absolute left-4 right-4 top-20 z-30 rounded-2xl border border-slate-700 bg-slate-900/80 p-4 backdrop-blur-md">
+          <label className="mb-2 block text-xs font-bold text-slate-400 uppercase">Edit Text</label>
+          <div className="flex flex-col gap-3">
+            <input ref={inputRef} value={editingText} onChange={(e) => setEditingText(e.target.value)} className="w-full rounded-lg bg-slate-800 p-2 outline-none border border-slate-700" placeholder="Type here..." />
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xs">Size</span>
+                <input type="number" value={textItems.find(i => i.id === activeTextId)?.fontSize || 48} onChange={(e) => setTextItems(textItems.map(t => t.id === activeTextId ? { ...t, fontSize: parseInt(e.target.value) || 0 } : t))} className="w-16 rounded bg-slate-800 p-1" />
               </div>
-              <button
-                onClick={finishEditingText}
-                className="w-full rounded-lg bg-slate-600 py-1 text-sm font-semibold text-slate-50 transition hover:bg-slate-700"
-              >
-                Done
-              </button>
+              <input type="color" value={textItems.find(i => i.id === activeTextId)?.textColor || "#ffffff"} onChange={(e) => setTextItems(textItems.map(t => t.id === activeTextId ? { ...t, textColor: e.target.value } : t))} className="h-8 w-8 rounded bg-transparent" />
+              <button onClick={finishEditingText} className="rounded bg-blue-600 px-4 py-1 text-sm font-bold">Done</button>
             </div>
-          )}
-          {textItems.filter((item) => item.finalized).length > 0 && (
-            <div className="space-y-1 px-4 py-3">
-              <p className="text-xs font-semibold uppercase text-slate-400">
-                Added Text
-              </p>
-              {textItems
-                .filter((item) => item.finalized)
-                .map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between rounded border border-slate-700 bg-slate-800 p-2 text-sm"
-                  >
-                    <span
-                      className="flex-1 cursor-pointer transition hover:text-slate-300"
-                      onClick={() =>
-                        editExistingText(item.id, item.text, item.x, item.y)
-                      }
-                    >
-                      {item.text || "(empty)"}
-                    </span>
-                    <button
-                      onClick={() => deleteText(item.id)}
-                      className="ml-2 text-xs font-semibold text-slate-400 transition hover:text-slate-300"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-            </div>
-          )}
+          </div>
         </div>
       )}
+    </div>
+  );
+}
 
-      {/* Overlay Buttons */}
-      <div className="absolute left-4 top-4 z-20">
-        <button
-          onClick={reset}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-600 text-slate-50 opacity-70 transition hover:bg-slate-700 hover:opacity-100"
-          title="Back"
-        >
-          ✕
-        </button>
+// --- INFO EDITOR ---
+function InfoEditor({ imageUrl, onBack }) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const { location, loading } = useGeolocation();
+  const router = useRouter();
+
+  const handlePublish = async () => {
+    if (loading) return alert("Waiting for location...");
+    try {
+      const blob = await (await fetch(imageUrl)).blob();
+      const formData = new FormData();
+      formData.append("image", blob, "post.png");
+      formData.append("lat", location?.lat?.toString() || "0");
+      formData.append("lng", location?.lng?.toString() || "0");
+      formData.append("title", title);
+      formData.append("description", description);
+      await fetch("/api/image", { method: "POST", body: formData });
+      router.push("/components/");
+    } catch (e) { alert("Error uploading"); }
+  };
+
+  return (
+    <div className="flex h-screen w-screen flex-col bg-slate-950">
+      <div className="z-20 flex items-center justify-between p-4 bg-slate-950/80">
+        <button onClick={onBack} className="text-2xl p-2">✕</button>
+        <button onClick={handlePublish} className="rounded-full bg-blue-600 px-6 py-2 font-bold">Publish</button>
       </div>
 
-      <div className="absolute right-4 top-4 z-20 flex gap-2">
-        <button
-          onClick={() => addTextAtPosition(width / 2 - 50, height / 2)}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-600 text-xl font-bold text-slate-50 opacity-70 transition hover:bg-slate-700 hover:opacity-100"
-          title="Add Text"
-        >
-          +
-        </button>
-        <button
-          onClick={handleUploadImage}
-          className="flex items-center justify-center gap-2 rounded-full bg-slate-600 px-4 py-2 text-slate-50 opacity-70 transition hover:bg-slate-700 hover:opacity-100"
-          title="Post"
-        >
-          <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z" />
-          </svg>
-          Post
-        </button>
+      <div className="h-1/6 w-full flex justify-center bg-black overflow-hidden">
+        <img src={imageUrl} alt="Preview" className="h-full object-contain aspect-[9/16]" />
+      </div>
+
+      <div className="flex flex-1 flex-col gap-6 bg-slate-900 p-6 rounded-t-3xl mt-4 border-t border-slate-800">
+        <div>
+          <label className="mb-2 block text-xs font-bold text-slate-500 uppercase">Title</label>
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Give it a title..." className="w-full rounded-xl bg-slate-800 p-4 outline-none border border-slate-700 focus:border-blue-500" />
+        </div>
+        <div className="flex-1 flex flex-col">
+          <label className="mb-2 block text-xs font-bold text-slate-500 uppercase">Description</label>
+          <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Describe your post..." className="w-full flex-1 rounded-xl bg-slate-800 p-4 resize-none outline-none border border-slate-700 focus:border-blue-500" />
+        </div>
       </div>
     </div>
   );
