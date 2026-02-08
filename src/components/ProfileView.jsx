@@ -7,6 +7,7 @@ import BottomSheet from "./BottomSheet";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut } from "@/lib/auth-client";
+import { motion, useScroll, useTransform } from "motion/react";
 
 const emojis = {
   person: "👤",
@@ -92,6 +93,20 @@ export default function ProfileView({ isMine, userId }) {
   const [isEmojiSelectorOpen, setIsEmojiSelectorOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [bio, setBio] = useState("");
+  const { scrollY } = useScroll();
+
+  const headerBgOpacity = useTransform(scrollY, [0, 80], [0, 1]);
+  const headerBlur = useTransform(scrollY, [0, 80], [0, 16]);
+
+  const pfpScale = useTransform(scrollY, [0, 152], [1, 0.45]);
+  const pfpX = useTransform(scrollY, [0, 152], [0, -12]);
+  const pfpY = useTransform(scrollY, [0, 152, 500], [0, 0, 348]);
+  const nameX = useTransform(scrollY, [0, 152], [0, 48]);
+  const nameY = useTransform(scrollY, [0, 152, 500], [0, -80, 268]);
+  const nameScale = useTransform(scrollY, [0, 152], [1, 0.8]);
+  const topicTitleOpacity = useTransform(scrollY, [0, 60], [1, 0]);
+  const pfpEditOpacity = useTransform(scrollY, [0, 40], [1, 0]);
+  const bioOpacity = useTransform(scrollY, [0, 50], [1, 0]);
 
   const fetchUser = async () => {
     try {
@@ -168,36 +183,49 @@ export default function ProfileView({ isMine, userId }) {
 
   return (
     <div className="min-h-screen w-full bg-slate-900 pb-28">
-      {/* Topic Bar */}
-      {!isMine && (
-        <div className="relative z-20 flex w-full items-center justify-center border-b border-white/10 bg-white/5 py-4 backdrop-blur-md">
+      {/* Sticky Header Background Container */}
+      <motion.div
+        className="fixed left-0 right-0 top-0 z-40 border-b border-white/10 bg-slate-900/80 backdrop-blur-xl"
+        style={{
+          opacity: headerBgOpacity,
+          backdropFilter: `blur(${headerBlur}px)`,
+          height: "64px",
+        }}
+      />
+
+      {/* Logout / Back Controls */}
+      {isMine ? (
+        <button
+          onClick={async () => {
+            await signOut();
+            router.replace("/login");
+          }}
+          className="fixed right-4 top-4 z-50 flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-white backdrop-blur-md transition-all hover:bg-black/50 active:scale-95"
+        >
+          <Icon icon="mingcute:exit-line" fontSize={18} />
+          <span className="text-sm font-medium">Logout</span>
+        </button>
+      ) : (
+        <div className="fixed left-0 right-0 top-0 z-50 flex h-16 items-center px-4">
           <button
             onClick={() => router.back()}
-            className="absolute left-4 rounded-full p-2 text-white transition-colors hover:bg-white/10"
+            className="rounded-full p-2 text-white transition-colors hover:bg-white/10"
           >
             <Icon icon="mingcute:arrow-left-line" fontSize={20} />
           </button>
-          <span className="text-sm font-normal uppercase tracking-widest text-white">
-            {user.name ? `${user.name.split(" ")[0]}'s` : "User"} Profile
-          </span>
+          <motion.div
+            className="pointer-events-none absolute left-0 right-0 flex justify-center"
+            style={{ opacity: topicTitleOpacity }}
+          >
+            <span className="text-sm font-normal uppercase tracking-widest text-white">
+              {user.name ? `${user.name.split(" ")[0]}'s` : "User"} Profile
+            </span>
+          </motion.div>
         </div>
       )}
 
       {/* Header / Cover Area with Mosaic */}
       <div className="relative h-48 bg-slate-900">
-        {isMine && (
-          <button
-            onClick={async () => {
-              await signOut();
-              router.replace("/login");
-            }}
-            className="absolute right-4 top-4 z-30 flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-white backdrop-blur-md transition-all hover:bg-black/50 active:scale-95"
-          >
-            <Icon icon="mingcute:exit-line" fontSize={18} />
-            <span className="text-sm font-medium">Logout</span>
-          </button>
-        )}
-
         <div className="absolute inset-0 overflow-clip">
           <div
             className="grayscale-50 absolute inset-0 grid select-none grid-cols-6 items-center justify-center gap-4 pb-12 opacity-10 transition-all duration-700"
@@ -212,10 +240,16 @@ export default function ProfileView({ isMine, userId }) {
         </div>
         <div className="bg-linear-to-b absolute inset-0 from-transparent via-slate-900/50 to-slate-900" />
 
-        <button
-          className="absolute -bottom-10 left-6 z-10"
+        {/* Shifting PFP */}
+        <motion.button
+          className="z-60 absolute -bottom-10 left-6 origin-left"
           onClick={() => isMine && setIsEmojiSelectorOpen(true)}
           disabled={!isMine}
+          style={{
+            scale: pfpScale,
+            x: pfpX,
+            y: pfpY,
+          }}
         >
           <div
             className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-4 border-slate-900 text-4xl shadow-xl transition-all duration-300"
@@ -224,12 +258,16 @@ export default function ProfileView({ isMine, userId }) {
             {emojis[selectedEmoji]}
           </div>
           {isMine && (
-            <div className="absolute bottom-1 right-1 flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 p-1.5 text-white shadow-md ring-2 ring-slate-900 transition-transform active:scale-90">
+            <motion.div
+              className="absolute bottom-1 right-1 flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 p-1.5 text-white shadow-md ring-2 ring-slate-900 transition-transform active:scale-90"
+              style={{ opacity: pfpEditOpacity }}
+            >
               <Icon icon="mingcute:edit-2-line" fontSize={18} />
-            </div>
+            </motion.div>
           )}
-        </button>
+        </motion.button>
       </div>
+
       {isMine && (
         <BottomSheet open={isEmojiSelectorOpen} onClose={() => setIsEmojiSelectorOpen(false)}>
           <div className="flex justify-end p-4">
@@ -259,11 +297,18 @@ export default function ProfileView({ isMine, userId }) {
 
       {/* Profile Info */}
       <div className="px-6 pt-14">
-        <div>
+        <motion.div
+          style={{
+            x: nameX,
+            y: nameY,
+            scale: nameScale,
+          }}
+          className="z-60 relative origin-left"
+        >
           <h1 className="text-2xl font-bold text-white">{user.name}</h1>
-        </div>
+        </motion.div>
 
-        <div className="mt-4 text-slate-300">
+        <motion.div className="mt-4 text-slate-300" style={{ opacity: bioOpacity }}>
           <div className="flex items-center gap-2">
             {!editing && (
               <>
@@ -305,7 +350,7 @@ export default function ProfileView({ isMine, userId }) {
               </>
             )}
           </div>
-        </div>
+        </motion.div>
 
         {/* Stats Row */}
         <div className="mt-6 flex items-center justify-evenly gap-6 border-y border-slate-800 py-4">
