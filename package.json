@@ -16,6 +16,7 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@iconify/react": "^6.0.2",
     "@tailwindcss/postcss": "^4.1.18",
     "babel-plugin-react-compiler": "1.0.0",
     "tailwindcss": "^4.1.18"
