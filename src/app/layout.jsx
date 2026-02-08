@@ -6,6 +6,8 @@ export const metadata = {
   description: "See what's happening near you",
 };
 
+import BottomNav from "@/components/layout/BottomNav";
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
@@ -21,7 +23,10 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body className="pb-20">
+        {children}
+        <BottomNav />
+      </body>
     </html>
   );
 }
