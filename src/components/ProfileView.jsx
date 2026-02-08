@@ -6,6 +6,7 @@ import { Icon } from "@iconify/react";
 import BottomSheet from "./BottomSheet";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { signOut } from "@/lib/auth-client";
 
 const emojis = {
   person: "👤",
@@ -184,6 +185,19 @@ export default function ProfileView({ isMine, userId }) {
 
       {/* Header / Cover Area with Mosaic */}
       <div className="relative h-48 bg-slate-900">
+        {isMine && (
+          <button
+            onClick={async () => {
+              await signOut();
+              router.replace("/login");
+            }}
+            className="absolute right-4 top-4 z-30 flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-white backdrop-blur-md transition-all hover:bg-black/50 active:scale-95"
+          >
+            <Icon icon="mingcute:exit-line" fontSize={18} />
+            <span className="text-sm font-medium">Logout</span>
+          </button>
+        )}
+
         <div className="absolute inset-0 overflow-clip">
           <div
             className="grayscale-50 absolute inset-0 grid select-none grid-cols-6 items-center justify-center gap-4 pb-12 opacity-10 transition-all duration-700"
