@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import { Settings, Plus } from "lucide-react";
 
 const MapContainer = dynamic(
   async () => (await import("react-leaflet")).MapContainer,
@@ -167,17 +168,17 @@ export default function LocalGemsMap() {
   return (
     <div className="relative h-screen w-full bg-white">
       {/* Top bar */}
-      <div className="absolute left-0 right-0 top-0 z-[1000] flex items-center justify-between px-4 pt-4">
-        <div className="rounded-full bg-white/90 px-4 py-2 shadow-sm ring-1 ring-black/5">
-          <div className="text-xs text-gray-500">Current location</div>
-          <div className="text-sm font-medium text-gray-900">
+      <div className="absolute left-0 right-0 top-0 z-[1000] flex items-center justify-between px-4 pt-4 pointer-events-none">
+        <div className="rounded-full bg-slate-900 px-4 py-2 shadow-sm ring-1 ring-white/10 ml-12 pointer-events-auto">
+          <div className="text-xs text-slate-400">Current location</div>
+          <div className="text-sm font-medium text-white">
             {coords
               ? `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`
               : geoErr
                 ? "Location unavailable"
                 : "Locating..."}
           </div>
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-slate-400">
             Range: {metersLabel(rangeMeters)}
             {loadingGems ? " • Loading..." : ""}
           </div>
@@ -185,29 +186,22 @@ export default function LocalGemsMap() {
 
         <button
           onClick={() => setSettingsOpen(true)}
-          className="rounded-full bg-white/90 p-3 shadow-sm ring-1 ring-black/5 hover:bg-white"
+          className="w-11 h-11 flex items-center justify-center rounded-full bg-slate-900 shadow-sm ring-1 ring-white/10 text-white hover:bg-black transition-colors pointer-events-auto"
           aria-label="Settings"
           title="Settings"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"
-              stroke="currentColor"
-              strokeWidth="2"
-            />
-            <path
-              d="M19.4 15a7.94 7.94 0 0 0 .1-1 7.94 7.94 0 0 0-.1-1l2-1.6-2-3.4-2.4 1a8.5 8.5 0 0 0-1.7-1l-.4-2.5H9.1L8.7 7a8.5 8.5 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.94 7.94 0 0 0-.1 1c0 .34.03.67.1 1l-2 1.6 2 3.4 2.4-1c.53.4 1.1.73 1.7 1l.4 2.5h5.8l.4-2.5c.6-.27 1.17-.6 1.7-1l2.4 1 2-3.4-2-1.6Z"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <Settings size={20} />
         </button>
       </div>
 
       {/* Map */}
       <div className="absolute inset-0">
-        <MapContainer center={center} zoom={15} className="h-full w-full">
+        <MapContainer
+          key={coords ? "map-ready" : "map-loading"}
+          center={center}
+          zoom={15}
+          className="h-full w-full"
+        >
           <TileLayer
             attribution="&copy; OpenStreetMap contributors"
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -243,7 +237,7 @@ export default function LocalGemsMap() {
                   <div className="mt-3 flex items-center justify-between">
                     <button
                       onClick={() => appraiseGem(g.id)}
-                      className="rounded-full bg-gray-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-black"
+                      className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-black transition-colors"
                     >
                       Appraise
                     </button>
@@ -262,11 +256,11 @@ export default function LocalGemsMap() {
       <div className="pointer-events-none absolute bottom-6 left-0 right-0 z-[1000] flex justify-center">
         <button
           onClick={() => setAddOpen(true)}
-          className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-gray-900 shadow-lg ring-1 ring-black/10 hover:bg-black"
+          className="pointer-events-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-900 shadow-xl ring-1 ring-white/10 hover:bg-black transition-transform active:scale-95"
           aria-label="Add a gem"
           title="Add a gem"
         >
-          <span className="text-3xl leading-none text-white">+</span>
+          <Plus size={32} strokeWidth={2.5} className="text-white" />
         </button>
       </div>
 
