@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Icon } from "@iconify/react";
 import BottomSheet from "./BottomSheet";
@@ -44,19 +43,88 @@ const emojis = {
   sauropod: "🦕",
 };
 
-export default function ProfileView({ isMine }) {
+export default function ProfileView({ isMine, userId }) {
   const router = useRouter();
-  const [selectedEmoji, setSelectedEmoji] = useState(Object.keys(emojis)[0]);
-  const [isEmojiSelectorOpen, setIsEmojiSelectorOpen] = useState(false);
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock Data
-  const user = {
-    name: "User1",
-    bio: "Hunting for the best hidden gems in the city! 🏙️🌲",
-    stats: {
-      signs: 4,
-      likes: 843,
-    },
+  const [selectedEmoji, setSelectedEmoji] = useState("person");
+  const [isEmojiSelectorOpen, setIsEmojiSelectorOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [bio, setBio] = useState("");
+
+  const fetchUser = async () => {
+    try {
+      setLoading(true);
+      const endpoint = isMine ? "/api/users/me" : `/api/users/${userId}`;
+      const res = await fetch(endpoint);
+      if (!res.ok) {
+        throw new Error("Failed to fetch user");
+      }
+      const data = await res.json();
+      setUserData(data);
+      setBio(data.bio || "");
+      setSelectedEmoji(data.pfp || "person");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUser();
+  }, [isMine, userId]);
+
+  const saveProfile = async (updates) => {
+    try {
+      const res = await fetch("/api/editProfile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      if (res.ok) {
+        // Refresh local data instead of full page refresh
+        const updatedData = await res.json();
+        if (updatedData.user) {
+          setUserData(updatedData.user);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to save profile:", error);
+    }
+  };
+
+  if (loading)
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-900 text-white">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+          <p className="animate-pulse text-sm font-medium text-slate-400">Loading Profile...</p>
+        </div>
+      </div>
+    );
+
+  if (error || !userData)
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-900 text-white">
+        <div className="text-center">
+          <Icon icon="mingcute:error-line" className="mx-auto mb-4 text-4xl text-red-500" />
+          <p className="text-lg font-medium">{error || "User not found"}</p>
+          <button onClick={() => router.back()} className="mt-4 text-blue-400 hover:underline">
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+
+  const user = userData;
+
+  // Mock Stats for now, as they are not in the User model yet
+  const stats = {
+    signs: 4,
+    likes: 843,
   };
 
   const myposts = [
@@ -85,9 +153,6 @@ export default function ProfileView({ isMine }) {
       likes: 210,
     },
   ];
-
-  const [editing, setEditing] = useState(false);
-  const [bio, setBio] = useState(user.bio || "");
 
   return (
     <div className="min-h-screen w-full bg-slate-900 pb-20">
@@ -124,13 +189,14 @@ export default function ProfileView({ isMine }) {
               <Icon icon="mingcute:close-line" />
             </button>
           </div>
-          <div className="grid w-full grid-cols-5 gap-2 px-3">
+          <div className="grid w-full grid-cols-5 gap-2 px-3 pb-8">
             {Object.entries(emojis).map(([name, emoji]) => (
               <button
                 key={emoji}
-                onClick={() => {
+                onClick={async () => {
                   setSelectedEmoji(name);
                   setIsEmojiSelectorOpen(false);
+                  await saveProfile({ pfp: name });
                 }}
                 className={`flex aspect-square items-center justify-center rounded-lg text-2xl transition-all ${
                   selectedEmoji === name ? "bg-blue-500 text-white" : "text-slate-300 hover:bg-slate-700"
@@ -153,34 +219,40 @@ export default function ProfileView({ isMine }) {
           <div className="flex items-center gap-2">
             {!editing && (
               <>
-                <p className="leading-relaxed">{bio}</p>
-                <button onClick={() => setEditing(true)}>
-                  <Icon icon="mingcute:edit-2-line" fontSize={16} />
-                </button>
+                <p className="leading-relaxed">{bio || "No bio yet."}</p>
+                {isMine && (
+                  <button onClick={() => setEditing(true)}>
+                    <Icon icon="mingcute:edit-2-line" fontSize={16} />
+                  </button>
+                )}
               </>
             )}
 
             {editing && (
               <>
                 <input
-                  className="border border-slate-700 bg-transparent px-2 py-1"
+                  className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1 text-white outline-none focus:border-blue-500"
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
+                  autoFocus
                 />
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     setEditing(false);
+                    await saveProfile({ bio });
                   }}
+                  className="text-blue-400"
                 >
-                  <Icon icon="mingcute:save-2-line" fontSize={16} />
+                  <Icon icon="mingcute:save-2-line" fontSize={20} />
                 </button>
                 <button
                   onClick={() => {
                     setEditing(false);
-                    setBio(user.bio);
+                    setBio(user.bio || "");
                   }}
+                  className="text-slate-400"
                 >
-                  <Icon icon="mingcute:close-line" fontSize={16} />
+                  <Icon icon="mingcute:close-line" fontSize={20} />
                 </button>
               </>
             )}
@@ -190,11 +262,11 @@ export default function ProfileView({ isMine }) {
         {/* Stats Row */}
         <div className="mt-6 flex gap-6 border-y border-slate-800 py-4">
           <div className="flex flex-col">
-            <span className="text-2xl font-bold text-white">{user.stats.signs}</span>
+            <span className="text-2xl font-bold text-white">{stats.signs}</span>
             <span className="text-xs uppercase tracking-wider text-slate-400">Signs</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-2xl font-bold text-white">{user.stats.likes}</span>
+            <span className="text-2xl font-bold text-white">{stats.likes}</span>
             <span className="text-xs uppercase tracking-wider text-slate-400">Likes</span>
           </div>
         </div>
