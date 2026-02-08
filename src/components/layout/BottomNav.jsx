@@ -26,9 +26,9 @@ export default function BottomNav() {
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: 100, opacity: 0 }}
                     transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                    className="fixed bottom-0 left-0 right-0 z-[9999] bg-slate-900/80 backdrop-blur-xl border-t border-white/10 px-6 pb-5 pt-2"
+                    className="fixed bottom-0 left-0 right-0 z-[9999] bg-slate-900/80 backdrop-blur-xl border-t border-white/10 px-6 pb-1 pt-1"
                 >
-                    <div className="flex items-center justify-between max-w-sm mx-auto">
+                    <div className="flex items-center justify-between max-w-[300px] mx-auto">
                         {navItems.map((item) => {
                             const isActive = pathname === item.href;
                             const Icon = item.icon;
