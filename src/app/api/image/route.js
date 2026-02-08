@@ -2,6 +2,7 @@ import dbConnect from "@/lib/mongodb";
 import { session } from "@/lib/session";
 import Post from "@/models/Post";
 import { NextResponse } from "next/server";
+import { uploadToS3 } from "@/lib/s3";
 
 import { cacheData } from "@/lib/redisAdapter";
 import { POSTS_RADIUS } from "@/models/Post";
@@ -45,12 +46,61 @@ export async function GET(req) {
           .limit(50)
           .lean();
       },
-      300, // Cache for 5 minutes
+      60 * 30,
     );
 
     return NextResponse.json(posts);
   } catch (error) {
     console.error("Error fetching nearby posts:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function POST(req) {
+  const s = await session();
+  if (!s) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const formData = await req.formData();
+  const file = formData.get("image");
+  const lat = parseFloat(formData.get("lat"));
+  const lng = parseFloat(formData.get("lng"));
+  const description = formData.get("description");
+
+  if (!file || isNaN(lat) || isNaN(lng)) {
+    return NextResponse.json(
+      { error: "Missing required fields" },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    // Generate unique filename
+    const fileName = `posts/${Date.now()}-${file.name.replace(
+      /[^a-zA-Z0-9.-]/g,
+      "",
+    )}`;
+
+    // Upload process
+    const imageUrl = await uploadToS3(buffer, fileName, file.type);
+
+    await dbConnect();
+    const newPost = await Post.create({
+      image: imageUrl,
+      lat,
+      lng,
+      description,
+      createdAt: new Date(),
+    });
+
+    return NextResponse.json(newPost);
+  } catch (error) {
+    console.error("Error creating post:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
