@@ -374,10 +374,9 @@ export default function ProfileView({ isMine, userId }) {
           {myposts.map((post) => (
             <Link key={post._id} href={`/gem/${post._id}`} scroll={false}>
               <div className="aspect-3/4 group relative overflow-hidden rounded-xl bg-slate-800">
-                <Image
+                <img
                   src={post.image}
                   alt={post.description || "Local Gem"}
-                  fill
                   className="object-cover transition-transform group-hover:scale-105"
                 />
                 <div className="bg-linear-to-t absolute inset-0 from-black/80 via-transparent to-transparent opacity-90" />

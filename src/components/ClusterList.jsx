@@ -33,10 +33,9 @@ export default function ClusterList({ gems, onGemClick, onClose }) {
             {/* Thumbnail */}
             <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-700 shadow-inner">
               {gem.image ? (
-                <Image
+                <img
                   src={gem.image}
                   alt={gem.title || "Gem"}
-                  fill
                   className="object-cover transition-transform duration-500 group-hover:scale-110"
                 />
               ) : (
