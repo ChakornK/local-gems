@@ -99,9 +99,9 @@ export default function ProfileView({ isMine, userId }) {
   const headerBlur = useTransform(scrollY, [0, 80], [0, 16]);
 
   const pfpScale = useTransform(scrollY, [0, 152], [1, 0.45]);
-  const pfpX = useTransform(scrollY, [0, 152], [0, -12]);
+  const pfpX = useTransform(scrollY, [0, 152], [0, isMine ? -12 : 36]);
   const pfpY = useTransform(scrollY, [0, 152, 500], [0, 0, 348]);
-  const nameX = useTransform(scrollY, [0, 152], [0, 48]);
+  const nameX = useTransform(scrollY, [0, 152], [0, isMine ? 48 : 96]);
   const nameY = useTransform(scrollY, [0, 152, 500], [0, -80, 268]);
   const nameScale = useTransform(scrollY, [0, 152], [1, 0.8]);
   const topicTitleOpacity = useTransform(scrollY, [0, 60], [1, 0]);
