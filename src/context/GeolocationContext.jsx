@@ -63,18 +63,10 @@ export const GeolocationProvider = ({ children }) => {
       maximumAge: 0,
     };
 
-    const watcher = navigator.geolocation.watchPosition(
-      handleSuccess,
-      handleError,
-      options,
-    );
+    const watcher = navigator.geolocation.watchPosition(handleSuccess, handleError, options);
 
     return () => navigator.geolocation.clearWatch(watcher);
   }, []);
 
-  return (
-    <GeolocationContext.Provider value={{ location, error, loading }}>
-      {children}
-    </GeolocationContext.Provider>
-  );
+  return <GeolocationContext.Provider value={{ location, error, loading }}>{children}</GeolocationContext.Provider>;
 };

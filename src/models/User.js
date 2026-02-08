@@ -26,5 +26,4 @@ UserSchema.statics.findCached = async function (id) {
   return doc;
 };
 
-export default mongoose.models.User ||
-  mongoose.model("User", UserSchema, "user");
+export default mongoose.models.User || mongoose.model("User", UserSchema, "user");

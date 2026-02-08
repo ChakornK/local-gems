@@ -15,10 +15,7 @@ export async function GET(req) {
   const radiusMeters = parseFloat(searchParams.get("radiusMeters"));
 
   if (isNaN(lat) || isNaN(lng)) {
-    return NextResponse.json(
-      { error: "Invalid latitude or longitude" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Invalid latitude or longitude" }, { status: 400 });
   }
 
   const s = await session();
@@ -54,10 +51,7 @@ export async function GET(req) {
     return NextResponse.json(posts);
   } catch (error) {
     console.error("Error fetching nearby posts:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
@@ -67,8 +61,7 @@ export async function POST(req) {
 
   await dbConnect();
   const user = await User.findCached(s.session.userId);
-  if (!user)
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   const formData = await req.formData();
   const file = formData.get("image");
@@ -77,10 +70,7 @@ export async function POST(req) {
   const description = formData.get("description");
 
   if (!file || isNaN(lat) || isNaN(lng)) {
-    return NextResponse.json(
-      { error: "Missing required fields" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
   try {
@@ -88,10 +78,7 @@ export async function POST(req) {
     const buffer = Buffer.from(bytes);
 
     // Generate unique filename
-    const fileName = `img/${Date.now()}-${file.name.replace(
-      /[^a-zA-Z0-9.-]/g,
-      "",
-    )}`;
+    const fileName = `img/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "")}`;
 
     // Upload process
     const imageUrl = await uploadToS3(buffer, fileName, file.type);
@@ -108,9 +95,6 @@ export async function POST(req) {
     return NextResponse.json(newPost);
   } catch (error) {
     console.error("Error creating post:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
