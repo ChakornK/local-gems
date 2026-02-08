@@ -51,6 +51,7 @@ export default function LocalGemsMap({ initialGemId }) {
   }, [initialGemId]);
 
   const [clusterGems, setClusterGems] = useState(null);
+  const [userIcon, setUserIcon] = useState(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -71,7 +72,23 @@ export default function LocalGemsMap({ initialGemId }) {
         iconSize: L.point(40, 48),
         iconAnchor: [20, 48],
       });
+
+      const redPin = L.divIcon({
+        html: `
+<div class="relative flex items-center justify-center text-blue-500" style="width: 40px; height: 48px;">
+  <svg viewBox="0 0 24 24" class="drop-shadow-black/50 absolute inset-0 h-full w-full drop-shadow" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="currentColor" />
+  </svg>
+  <div class="z-201 absolute left-1/2 top-[16px] flex h-[8px] w-[8px] -translate-x-1/2 items-center justify-center rounded-full bg-white"></div>
+</div>
+              `,
+        className: "custom-clustericon",
+        iconSize: L.point(40, 48),
+        iconAnchor: [20, 48],
+      });
+
       L.Marker.prototype.options.icon = customPin;
+      setUserIcon(redPin);
     })();
   }, []);
 
@@ -130,9 +147,7 @@ export default function LocalGemsMap({ initialGemId }) {
 
           {location && (
             <>
-              <Marker position={[location.lat, location.lng]}>
-                <Popup>You are here</Popup>
-              </Marker>
+              <Marker position={[location.lat, location.lng]} icon={userIcon || undefined} interactive={false}></Marker>
               <Circle center={[location.lat, location.lng]} radius={rangeMeters} />
             </>
           )}
