@@ -106,7 +106,7 @@ export default function GemDetails({ gemId, onClose }) {
             </div>
 
             {/* Description */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto px-6 py-2.5">
               <p className="text-base leading-relaxed text-slate-300">
                 {sign.description || "No description provided."}
               </p>
