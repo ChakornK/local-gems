@@ -18,7 +18,14 @@ export async function GET(req, { params }) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    return NextResponse.json(post);
+    const likesCount = (post.likes || []).length;
+    const isLiked = post.likes?.some((uid) => uid.toString() === s.user.id);
+
+    return NextResponse.json({
+      ...post,
+      likes: likesCount,
+      isLiked,
+    });
   } catch (error) {
     console.error("Error fetching post:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

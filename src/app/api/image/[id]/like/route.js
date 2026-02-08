@@ -12,8 +12,22 @@ export async function POST(req, { params }) {
   const post = await Post.findById(id);
   if (!post) return NextResponse.json({ error: "Post not found" }, { status: 404 });
 
-  post.likes += 1;
+  const userId = s.user.id;
+  const isLiked = post.likes.includes(userId);
+
+  if (isLiked) {
+    post.likes = post.likes.filter((uid) => uid.toString() !== userId);
+  } else {
+    post.likes.push(userId);
+  }
+
   await post.save();
 
-  return NextResponse.json({ likes: post.likes }, { status: 200 });
+  return NextResponse.json(
+    {
+      likes: post.likes.length,
+      isLiked: !isLiked,
+    },
+    { status: 200 },
+  );
 }

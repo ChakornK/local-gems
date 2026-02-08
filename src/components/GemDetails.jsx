@@ -37,29 +37,38 @@ export default function GemDetails({ gemId, onClose }) {
   async function onLike() {
     if (!sign) return;
 
+    const isLiked = sign.isLiked;
     const previousLikes = sign.likes || 0;
-    setSign((prev) => ({ ...prev, likes: previousLikes + 1 }));
+
+    // Optimistic Update
+    setSign((prev) => ({
+      ...prev,
+      likes: isLiked ? Math.max(0, previousLikes - 1) : previousLikes + 1,
+      isLiked: !isLiked,
+    }));
     setPulseCount((prev) => prev + 1);
 
-    const newHearts = Array.from({ length: 6 }).map((_, i) => ({
-      id: Date.now() + i,
-      angle: (Math.random() - 0.5) * 60,
-      distance: 100 + Math.random() * 50,
-      color: ["#F472B6", "#EC4899", "#DB2777", "#F0ABFC", "#E879F9"][Math.floor(Math.random() * 5)],
-    }));
-    setShowHearts((prev) => [...prev, ...newHearts]);
-    setTimeout(() => {
-      setShowHearts((prev) => prev.filter((h) => !newHearts.find((nh) => nh.id === h.id)));
-    }, 1000);
+    if (!isLiked) {
+      const newHearts = Array.from({ length: 6 }).map((_, i) => ({
+        id: Date.now() + i,
+        angle: (Math.random() - 0.5) * 60,
+        distance: 100 + Math.random() * 50,
+        color: ["#F472B6", "#EC4899", "#DB2777", "#F0ABFC", "#E879F9"][Math.floor(Math.random() * 5)],
+      }));
+      setShowHearts((prev) => [...prev, ...newHearts]);
+      setTimeout(() => {
+        setShowHearts((prev) => prev.filter((h) => !newHearts.find((nh) => nh.id === h.id)));
+      }, 1000);
+    }
 
     try {
       const res = await fetch(`/api/image/${gemId}/like`, { method: "POST" });
       if (!res.ok) throw new Error("Failed to like");
       const data = await res.json();
-      setSign((prev) => ({ ...prev, likes: data.likes }));
+      setSign((prev) => ({ ...prev, likes: data.likes, isLiked: data.isLiked }));
     } catch (err) {
       console.error(err);
-      setSign((prev) => ({ ...prev, likes: previousLikes }));
+      setSign((prev) => ({ ...prev, likes: previousLikes, isLiked: isLiked }));
     }
   }
 
@@ -156,17 +165,26 @@ export default function GemDetails({ gemId, onClose }) {
                 onClick={onLike}
                 className="group relative flex-1 transition-all active:scale-90 disabled:opacity-50"
               >
-                <div className="bg-linear-to-r relative flex w-full items-center justify-center gap-2 rounded-xl from-pink-500 via-rose-500 to-orange-500 py-3 font-bold text-white shadow-lg transition-all group-hover:from-pink-600 group-hover:to-orange-600">
+                <div
+                  className={`relative flex w-full items-center justify-center gap-2 rounded-xl py-3 font-bold text-white shadow-lg transition-all ${
+                    sign.isLiked
+                      ? "bg-linear-to-r from-pink-500 via-rose-500 to-orange-500 hover:from-pink-600 hover:to-orange-600"
+                      : "bg-slate-800 border border-slate-700 hover:bg-slate-700"
+                  }`}
+                >
                   <motion.div
                     key={pulseCount}
                     initial={{ scale: 1 }}
-                    animate={{ scale: [1, 1.5, 1] }}
+                    animate={sign.isLiked ? { scale: [1, 1.5, 1] } : {}}
                     transition={{ duration: 0.3 }}
                     className="flex items-center"
                   >
-                    <Icon icon="mingcute:heart-fill" fontSize={22} className="drop-shadow-sm" />
+                    <Icon
+                      icon={sign.isLiked ? "mingcute:heart-fill" : "mingcute:heart-line"}
+                      fontSize={22}
+                      className={sign.isLiked ? "drop-shadow-sm" : "text-slate-400"}
+                    />
                   </motion.div>
-
                   <span>{sign.likes || 0}</span>
                 </div>
 
