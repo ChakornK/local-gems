@@ -259,7 +259,14 @@ function KonvaEditor({ imageUrl, width, height, onBack, onNext }) {
   const handleNext = () => {
     setSelectedTextId(null);
     setTimeout(() => {
-      onNext(stageRef.current.toDataURL());
+      const stage = stageRef.current;
+      const area = {
+        x: (winSize.w - width * finalScale) / 2,
+        y: (winSize.h - height * finalScale) / 2,
+        width: width * finalScale,
+        height: height * finalScale,
+      };
+      onNext(stage.toDataURL(area));
     }, 100);
   };
 
