@@ -540,12 +540,16 @@ function CaptionInput({ text, setText, styleType, setStyleType, onDone }) {
 function InfoEditor({ imageUrl, onBack }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [isPublishing, setIsPublishing] = useState(false);
   const { location, loading } = useGeolocation();
   const router = useRouter();
 
   const handlePublish = async () => {
     if (loading) return alert("Waiting for location...");
+    if (isPublishing) return;
+
     try {
+      setIsPublishing(true);
       const blob = await (await fetch(imageUrl)).blob();
       const formData = new FormData();
       formData.append("image", blob, "post.png");
@@ -562,17 +566,24 @@ function InfoEditor({ imageUrl, onBack }) {
       }
     } catch (e) {
       alert("Error uploading");
+      setIsPublishing(false);
     }
   };
 
   return (
     <div className="flex h-screen w-screen flex-col bg-slate-950">
       <div className="z-20 flex items-center justify-between bg-slate-950/80 p-4">
-        <button onClick={onBack} className="p-2 text-2xl">
+        <button onClick={onBack} className="p-2 text-2xl" disabled={isPublishing}>
           ✕
         </button>
-        <button onClick={handlePublish} className="rounded-full bg-blue-600 px-6 py-2 font-bold">
-          Publish
+        <button
+          onClick={handlePublish}
+          disabled={isPublishing}
+          className={`rounded-full px-6 py-2 font-bold transition-all ${
+            isPublishing ? "cursor-not-allowed bg-slate-700 text-slate-400" : "bg-blue-600 text-white active:scale-95"
+          }`}
+        >
+          {isPublishing ? "Publishing..." : "Publish"}
         </button>
       </div>
 
