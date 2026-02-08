@@ -87,15 +87,17 @@ export default function ProfileView({ isMine }) {
   return (
     <div className="min-h-screen w-full bg-slate-900 pb-20">
       {/* Topic Bar */}
-      {/* <div className="relative z-20 flex w-full items-center justify-center border-b border-white/10 bg-white/5 py-4 backdrop-blur-md">
-        <button
-          onClick={() => router.back()}
-          className="absolute left-4 rounded-full p-2 text-white transition-colors hover:bg-white/10"
-        >
-          <Icon icon="mingcute:arrow-left-line" fontSize={20} />
-        </button>
-        <span className="text-sm font-normal uppercase tracking-widest text-white">User Profile</span>
-      </div> */}
+      {!isMine && (
+        <div className="relative z-20 flex w-full items-center justify-center border-b border-white/10 bg-white/5 py-4 backdrop-blur-md">
+          <button
+            onClick={() => router.back()}
+            className="absolute left-4 rounded-full p-2 text-white transition-colors hover:bg-white/10"
+          >
+            <Icon icon="mingcute:arrow-left-line" fontSize={20} />
+          </button>
+          <span className="text-sm font-normal uppercase tracking-widest text-white">User Profile</span>
+        </div>
+      )}
 
       {/* Header / Cover Area */}
       <button className="relative h-48 bg-slate-900" onClick={() => isMine && setIsEmojiSelectorOpen(true)}>
