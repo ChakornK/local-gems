@@ -45,12 +45,11 @@ const emojis = {
 
 export default function ProfileView({ isMine }) {
   const [selectedEmoji, setSelectedEmoji] = useState(Object.keys(emojis)[0]);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isEmojiSelectorOpen, setIsEmojiSelectorOpen] = useState(false);
 
   // Mock Data
   const user = {
     name: "User1",
-    handle: "@User1",
     bio: "Hunting for the best hidden gems in the city! 🏙️🌲",
     stats: {
       signs: 4,
@@ -99,7 +98,7 @@ export default function ProfileView({ isMine }) {
       </div> */}
 
       {/* Header / Cover Area */}
-      <button className="relative h-48 bg-slate-900" onClick={() => isMine && setIsDropdownOpen(true)}>
+      <button className="relative h-48 bg-slate-900" onClick={() => isMine && setIsEmojiSelectorOpen(true)}>
         <div className="absolute -bottom-12 left-6">
           <div className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-4 border-slate-900 bg-slate-800 text-4xl">
             {emojis[selectedEmoji]}
@@ -112,9 +111,9 @@ export default function ProfileView({ isMine }) {
         </div>
       </button>
       {isMine && (
-        <BottomSheet open={isDropdownOpen} onClose={() => setIsDropdownOpen(false)}>
+        <BottomSheet open={isEmojiSelectorOpen} onClose={() => setIsEmojiSelectorOpen(false)}>
           <div className="flex justify-end p-4">
-            <button onClick={() => setIsDropdownOpen(false)} className="font-semibold">
+            <button onClick={() => setIsEmojiSelectorOpen(false)} className="font-semibold">
               <Icon icon="mingcute:close-line" />
             </button>
           </div>
@@ -124,7 +123,7 @@ export default function ProfileView({ isMine }) {
                 key={emoji}
                 onClick={() => {
                   setSelectedEmoji(name);
-                  setIsDropdownOpen(false);
+                  setIsEmojiSelectorOpen(false);
                 }}
                 className={`flex aspect-square items-center justify-center rounded-lg text-2xl transition-all ${
                   selectedEmoji === name ? "bg-blue-500 text-white" : "text-slate-300 hover:bg-slate-700"
@@ -141,7 +140,6 @@ export default function ProfileView({ isMine }) {
       <div className="px-6 pt-14">
         <div>
           <h1 className="text-2xl font-bold text-white">{user.name}</h1>
-          <p className="font-medium text-slate-400">{user.handle}</p>
         </div>
 
         <p className="mt-4 leading-relaxed text-slate-300">{user.bio}</p>
