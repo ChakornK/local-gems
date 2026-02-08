@@ -126,7 +126,7 @@ export default function ProfileView({ isMine, userId }) {
       if (res.ok) {
         const updatedData = await res.json();
         if (updatedData.user) {
-          setUserData(updatedData.user);
+          setUserData(Object.assign(userData, updatedData.user));
         }
       }
     } catch (error) {
