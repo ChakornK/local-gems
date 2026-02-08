@@ -45,7 +45,7 @@ export async function GET(req) {
           .limit(50)
           .lean();
       },
-      60 * 30,
+      60,
     );
 
     return NextResponse.json(posts);
