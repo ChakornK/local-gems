@@ -175,7 +175,9 @@ export default function ProfileView({ isMine, userId }) {
           >
             <Icon icon="mingcute:arrow-left-line" fontSize={20} />
           </button>
-          <span className="text-sm font-normal uppercase tracking-widest text-white">User Profile</span>
+          <span className="text-sm font-normal uppercase tracking-widest text-white">
+            {user.name ? `${user.name.split(" ")[0]}'s` : "User"} Profile
+          </span>
         </div>
       )}
 
