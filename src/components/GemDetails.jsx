@@ -11,6 +11,7 @@ export default function GemDetails({ gemId, onClose }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [liking, setLiking] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!gemId) return;
@@ -45,6 +46,16 @@ export default function GemDetails({ gemId, onClose }) {
       setLiking(false);
     }
   }
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.origin + `/gem/${gemId}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
 
   const handleClose = (path) => {
     if (onClose) {
@@ -132,8 +143,15 @@ export default function GemDetails({ gemId, onClose }) {
               >
                 {liking ? "..." : `Like (${sign.likes || 0})`}
               </button>
-              <button className="flex-1 rounded-xl border border-slate-700 bg-slate-800 py-3 font-medium text-white transition-transform hover:bg-slate-700 active:scale-95">
-                Share
+              <button
+                onClick={handleCopy}
+                className={`flex-1 rounded-xl border py-3 font-medium transition-all active:scale-95 ${
+                  copied
+                    ? "border-green-500/50 bg-green-500/10 text-green-400"
+                    : "border-slate-700 bg-slate-800 text-white hover:bg-slate-700"
+                }`}
+              >
+                {copied ? "Copied!" : "Share"}
               </button>
             </div>
           </div>
