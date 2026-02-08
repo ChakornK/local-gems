@@ -89,7 +89,7 @@ export default function LocalGemsMap() {
         const res = await fetch(`/api/image?${qs.toString()}`);
         if (!res.ok) throw new Error("Failed to load gems");
         const data = await res.json();
-        setGems(data.gems || []);
+        setGems(data || []);
       } catch (e) {
         console.error(e);
       } finally {
@@ -132,7 +132,7 @@ export default function LocalGemsMap() {
   return (
     <div className="relative h-screen w-full bg-white">
       {/* Top bar */}
-      <div className="pointer-events-none absolute left-0 right-0 top-0 z-[1000] flex items-center justify-between px-4 pt-4">
+      <div className="z-1000 pointer-events-none absolute left-0 right-0 top-0 flex items-center justify-between px-4 pt-4">
         <div className="pointer-events-auto ml-12 rounded-full bg-slate-900 px-4 py-2 shadow-sm ring-1 ring-white/10">
           <div className="text-xs text-slate-400">Current location</div>
           <div className="text-sm font-medium text-white">
@@ -162,7 +162,7 @@ export default function LocalGemsMap() {
       {/* Map */}
       <div className="absolute inset-0">
         <MapContainer
-          key={coords ? "map-ready" : "map-loading"}
+          key={!geolocationLoading ? "map-ready" : "map-loading"}
           center={center}
           zoom={15}
           className="h-full w-full"
@@ -199,9 +199,9 @@ export default function LocalGemsMap() {
                     Local Gem
                   </div>
 
-                  {g.imageUrl ? (
+                  {g.image ? (
                     <img
-                      src={g.imageUrl}
+                      src={g.image}
                       alt="Gem"
                       className="mt-2 h-28 w-full rounded-lg object-cover"
                     />
@@ -229,7 +229,7 @@ export default function LocalGemsMap() {
 
       {/* Settings modal */}
       {settingsOpen && (
-        <div className="absolute inset-0 z-[2000] bg-black/30 p-4">
+        <div className="z-2000 absolute inset-0 bg-black/30 p-4">
           <div className="mx-auto mt-20 w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
             <div className="flex items-center justify-between">
               <div className="text-lg font-semibold text-gray-900">
@@ -309,7 +309,7 @@ export default function LocalGemsMap() {
 
       {/* Add modal */}
       {addOpen && (
-        <div className="absolute inset-0 z-[2000] bg-black/30 p-4">
+        <div className="z-2000 absolute inset-0 bg-black/30 p-4">
           <div className="mx-auto mt-16 w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
             <div className="flex items-center justify-between">
               <div className="text-lg font-semibold text-gray-900">
