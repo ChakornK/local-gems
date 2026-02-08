@@ -1,13 +1,10 @@
-import "./globals.css";
+import "../globals.css";
 import "leaflet/dist/leaflet.css";
-import { GeolocationProvider } from "@/context/GeolocationContext";
 
 export const metadata = {
   title: "Local Gems",
   description: "See what's happening near you",
 };
-
-import BottomNav from "@/components/layout/BottomNav";
 
 export default function RootLayout({ children }) {
   return (
@@ -20,12 +17,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body className="pb-12">
-        <GeolocationProvider>
-          {children}
-          <BottomNav />
-        </GeolocationProvider>
-      </body>
+      <body className="h-dvh pb-12">{children}</body>
     </html>
   );
 }
