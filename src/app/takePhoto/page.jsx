@@ -1,17 +1,9 @@
 "use client";
 
 import { useGeolocation } from "@/context/GeolocationContext";
-import { Stage, Layer, Text, Image as KonvaImage, Rect } from "react-konva";
-import React, { useRef, useState, useEffect } from "react";
+import { Stage, Layer, Text, Image as KonvaImage } from "react-konva";
+import { useRef, useState, useEffect, Fragment } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Stage,
-  Layer,
-  Text,
-  Image as KonvaImage,
-  Rect,
-  Transformer,
-} from "react-konva";
 import useImage from "use-image";
 
 export default function CameraWithEditor() {
@@ -169,7 +161,6 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
   const [editInputPos, setEditInputPos] = useState({ x: 0, y: 0 });
   const [selectedTextId, setSelectedTextId] = useState(null);
   const [image] = useImage(imageUrl);
-  const stageContainerRef = useRef(null);
   const inputRef = useRef(null);
   const textRefs = useRef({});
   const transformerRefs = useRef({});
@@ -343,7 +334,7 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
     typeof window !== "undefined" ? window.innerHeight : 640,
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleResize = () => {
       setStageWidth(window.innerWidth);
       setStageHeight(window.innerHeight);
@@ -386,7 +377,7 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
               />
             )}
             {textItems.map((item) => (
-              <React.Fragment key={item.id}>
+              <Fragment key={item.id}>
                 <Text
                   ref={(el) => {
                     if (el) textRefs.current[item.id] = el;
@@ -463,7 +454,7 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
                     boundBoxFunc={(oldBox, newBox) => newBox}
                   />
                 )}
-              </React.Fragment>
+              </Fragment>
             ))}
           </Layer>
         </Stage>
@@ -594,7 +585,6 @@ function KonvaEditor({ imageUrl, width, height, reset }) {
       </div>
 
       <div className="absolute right-4 top-4 z-20 flex gap-2">
-        div{" "}
         <button
           onClick={() => addTextAtPosition(width / 2 - 50, height / 2)}
           className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-600 text-xl font-bold text-slate-50 opacity-70 transition hover:bg-slate-700 hover:opacity-100"
