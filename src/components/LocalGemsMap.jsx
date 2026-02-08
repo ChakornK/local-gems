@@ -58,15 +58,6 @@ export default function LocalGemsMap({ initialGemId }) {
     (async () => {
       const L = (await import("leaflet")).default;
 
-      // const markerIcon2x = (await import("leaflet/dist/images/marker-icon-2x.png")).default;
-      // const markerIcon = (await import("leaflet/dist/images/marker-icon.png")).default;
-      // const markerShadow = (await import("leaflet/dist/images/marker-shadow.png")).default;
-
-      // L.Icon.Default.mergeOptions({
-      //   iconRetinaUrl: markerIcon2x.src ?? markerIcon2x,
-      //   iconUrl: markerIcon.src ?? markerIcon,
-      //   shadowUrl: markerShadow.src ?? markerShadow,
-      // });
       const customPin = L.divIcon({
         html: `
 <div class="relative flex items-center justify-center text-blue-400" style="width: 40px; height: 48px;">
