@@ -9,7 +9,7 @@ export const metadata = {
 
 import BottomNav from "@/components/layout/BottomNav";
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children, modal }) {
   return (
     <html lang="en">
       <head>
@@ -23,6 +23,7 @@ export default function RootLayout({ children }) {
       <body className="h-dvh pb-12">
         <GeolocationProvider>
           {children}
+          {modal}
           <BottomNav />
         </GeolocationProvider>
       </body>
