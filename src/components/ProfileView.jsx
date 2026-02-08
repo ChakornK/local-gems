@@ -6,45 +6,45 @@ import Image from "next/image";
 import { Icon } from "@iconify/react";
 import BottomSheet from "./BottomSheet";
 
-const emojiBank = [
-  "👤",
-  "🤖",
-  "👻",
-  "👾",
-  "🐶",
-  "🐱",
-  "🦊",
-  "🐼",
-  "🐻",
-  "🐨",
-  "🐯",
-  "🦁",
-  "🐮",
-  "🐷",
-  "🐸",
-  "🐵",
-  "🐰",
-  "🐹",
-  "🦝",
-  "🦫",
-  "🦥",
-  "🐔",
-  "🐧",
-  "🦉",
-  "🦅",
-  "🦜",
-  "🐟",
-  "🐙",
-  "🦈",
-  "🐳",
-  "🐢",
-  "🦎",
-  "🐍",
-  "🦕",
-];
+const emojis = {
+  person: "👤",
+  robot: "🤖",
+  ghost: "👻",
+  alien_monster: "👾",
+  dog: "🐶",
+  cat: "🐱",
+  fox: "🦊",
+  panda: "🐼",
+  bear: "🐻",
+  koala: "🐨",
+  tiger: "🐯",
+  lion: "🦁",
+  cow: "🐮",
+  pig: "🐷",
+  frog: "🐸",
+  monkey: "🐵",
+  rabbit: "🐰",
+  hamster: "🐹",
+  raccoon: "🦝",
+  beaver: "🦫",
+  sloth: "🦥",
+  chicken: "🐔",
+  penguin: "🐧",
+  owl: "🦉",
+  eagle: "🦅",
+  parrot: "🦜",
+  fish: "🐟",
+  octopus: "🐙",
+  shark: "🦈",
+  whale: "🐳",
+  turtle: "🐢",
+  lizard: "🦎",
+  snake: "🐍",
+  sauropod: "🦕",
+};
 
-export default function ProfileView() {
-  const [selectedEmoji, setSelectedEmoji] = useState(emojiBank[0]);
+export default function ProfileView({ isMine }) {
+  const [selectedEmoji, setSelectedEmoji] = useState(Object.keys(emojis)[0]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Mock Data
@@ -99,61 +99,49 @@ export default function ProfileView() {
       </div> */}
 
       {/* Header / Cover Area */}
-      <div className="relative h-48 bg-slate-900">
+      <button className="relative h-48 bg-slate-900" onClick={() => isMine && setIsDropdownOpen(true)}>
         <div className="absolute -bottom-12 left-6">
           <div className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-4 border-slate-900 bg-slate-800 text-4xl">
-            {selectedEmoji}
+            {emojis[selectedEmoji]}
           </div>
+          {isMine && (
+            <div className="absolute bottom-0 right-0 rounded-full bg-slate-600 p-1.5 text-white">
+              <Icon icon="mingcute:edit-2-line" fontSize={18} />
+            </div>
+          )}
         </div>
-      </div>
+      </button>
+      {isMine && (
+        <BottomSheet open={isDropdownOpen} onClose={() => setIsDropdownOpen(false)}>
+          <div className="flex justify-end p-4">
+            <button onClick={() => setIsDropdownOpen(false)} className="font-semibold">
+              <Icon icon="mingcute:close-line" />
+            </button>
+          </div>
+          <div className="grid w-full grid-cols-5 gap-2 px-3">
+            {Object.entries(emojis).map(([name, emoji]) => (
+              <button
+                key={emoji}
+                onClick={() => {
+                  setSelectedEmoji(name);
+                  setIsDropdownOpen(false);
+                }}
+                className={`flex aspect-square items-center justify-center rounded-lg text-2xl transition-all ${
+                  selectedEmoji === name ? "bg-blue-500 text-white" : "text-slate-300 hover:bg-slate-700"
+                }`}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </BottomSheet>
+      )}
 
       {/* Profile Info */}
       <div className="px-6 pt-14">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-white">{user.name}</h1>
-            <p className="font-medium text-slate-400">{user.handle}</p>
-          </div>
-          <button className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-700">
-            Edit Profile
-          </button>
-        </div>
-        {/* Avatar */}
-        <div className="relative z-30 mt-6">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Choose your Avatar</p>
-
-          {/* Dropdown Button */}
-          <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex w-full items-center gap-3 rounded-xl bg-slate-800 px-4 py-3 text-white transition-colors hover:bg-slate-700 sm:w-64"
-          >
-            <span className="text-2xl">{selectedEmoji}</span>
-            <span className="flex-1 text-left text-sm font-medium">Change Avatar</span>
-            <span className="text-xs text-slate-400">▼</span>
-          </button>
-          <BottomSheet open={isDropdownOpen} onClose={() => setIsDropdownOpen(false)}>
-            <div className="flex justify-end p-4">
-              <button onClick={() => setIsDropdownOpen(false)} className="font-semibold">
-                <Icon icon="mingcute:close-line" />
-              </button>
-            </div>
-            <div className="grid w-full grid-cols-5 gap-2 px-3">
-              {emojiBank.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => {
-                    setSelectedEmoji(emoji);
-                    setIsDropdownOpen(false);
-                  }}
-                  className={`flex aspect-square items-center justify-center rounded-lg text-2xl transition-all ${
-                    selectedEmoji === emoji ? "bg-blue-500 text-white" : "text-slate-300 hover:bg-slate-700"
-                  }`}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          </BottomSheet>
+        <div>
+          <h1 className="text-2xl font-bold text-white">{user.name}</h1>
+          <p className="font-medium text-slate-400">{user.handle}</p>
         </div>
 
         <p className="mt-4 leading-relaxed text-slate-300">{user.bio}</p>
