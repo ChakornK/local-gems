@@ -6,14 +6,8 @@ import { useGeolocation } from "@/context/GeolocationContext";
 import { useRouter } from "next/navigation";
 import { Settings } from "lucide-react";
 
-const MapContainer = dynamic(
-  async () => (await import("react-leaflet")).MapContainer,
-  { ssr: false },
-);
-const TileLayer = dynamic(
-  async () => (await import("react-leaflet")).TileLayer,
-  { ssr: false },
-);
+const MapContainer = dynamic(async () => (await import("react-leaflet")).MapContainer, { ssr: false });
+const TileLayer = dynamic(async () => (await import("react-leaflet")).TileLayer, { ssr: false });
 const Marker = dynamic(async () => (await import("react-leaflet")).Marker, {
   ssr: false,
 });
@@ -31,11 +25,7 @@ function metersLabel(m) {
 }
 
 export default function LocalGemsMap() {
-  const {
-    location,
-    loading: geolocationLoading,
-    error: geolocationError,
-  } = useGeolocation();
+  const { location, loading: geolocationLoading, error: geolocationError } = useGeolocation();
 
   const [rangeMeters, setRangeMeters] = useState(1000);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -57,14 +47,9 @@ export default function LocalGemsMap() {
     (async () => {
       const L = (await import("leaflet")).default;
 
-      const markerIcon2x = (
-        await import("leaflet/dist/images/marker-icon-2x.png")
-      ).default;
-      const markerIcon = (await import("leaflet/dist/images/marker-icon.png"))
-        .default;
-      const markerShadow = (
-        await import("leaflet/dist/images/marker-shadow.png")
-      ).default;
+      const markerIcon2x = (await import("leaflet/dist/images/marker-icon-2x.png")).default;
+      const markerIcon = (await import("leaflet/dist/images/marker-icon.png")).default;
+      const markerShadow = (await import("leaflet/dist/images/marker-shadow.png")).default;
 
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: markerIcon2x.src ?? markerIcon2x,
@@ -103,11 +88,7 @@ export default function LocalGemsMap() {
   }, [location]);
 
   async function appraiseGem(gemId) {
-    setGems((prev) =>
-      prev.map((g) =>
-        g._id === gemId ? { ...g, appraisals: (g.appraisals || 0) + 1 } : g,
-      ),
-    );
+    setGems((prev) => prev.map((g) => (g._id === gemId ? { ...g, appraisals: (g.appraisals || 0) + 1 } : g)));
 
     try {
       const res = await fetch(`/api/image/${gemId}/like`, {
@@ -115,13 +96,7 @@ export default function LocalGemsMap() {
       });
       if (!res.ok) throw new Error("like failed");
     } catch (e) {
-      setGems((prev) =>
-        prev.map((g) =>
-          g.id === gemId
-            ? { ...g, likes: Math.max(0, (g.appraisals || 1) - 1) }
-            : g,
-        ),
-      );
+      setGems((prev) => prev.map((g) => (g.id === gemId ? { ...g, likes: Math.max(0, (g.appraisals || 1) - 1) } : g)));
     }
   }
 
@@ -143,8 +118,7 @@ export default function LocalGemsMap() {
                 : "Locating..."}
           </div>
           <div className="text-xs text-slate-400">
-            Range: {metersLabel(rangeMeters)} •{" "}
-            {mapStyle === "satellite" ? "Satellite" : "Standard"}
+            Range: {metersLabel(rangeMeters)} • {mapStyle === "satellite" ? "Satellite" : "Standard"}
             {loadingGems ? " • Loading..." : ""}
           </div>
         </div>
@@ -184,27 +158,18 @@ export default function LocalGemsMap() {
               <Marker position={[location.lat, location.lng]}>
                 <Popup>You are here</Popup>
               </Marker>
-              <Circle
-                center={[location.lat, location.lng]}
-                radius={rangeMeters}
-              />
+              <Circle center={[location.lat, location.lng]} radius={rangeMeters} />
             </>
           )}
 
           {gems.map((g) => (
             <Marker key={g._id} position={[g.lat, g.lng]}>
               <Popup>
-                <div className="w-[220px] bg-slate-900 p-4 rounded-lg">
-                  <div className="text-sm font-semibold text-white">
-                    Local Gem
-                  </div>
+                <div className="w-55 rounded-lg bg-slate-900 p-4">
+                  <div className="text-sm font-semibold text-white">Local Gem</div>
 
                   {g.image ? (
-                    <img
-                      src={g.image}
-                      alt="Gem"
-                      className="mt-2 h-28 w-full rounded-lg object-cover"
-                    />
+                    <img src={g.image} alt="Gem" className="mt-2 h-28 w-full rounded-lg object-cover" />
                   ) : null}
 
                   <p className="mt-2 text-sm text-slate-300">{g.note}</p>
@@ -219,14 +184,12 @@ export default function LocalGemsMap() {
                       </button>
                       <button
                         onClick={() => route.push(`/sign/${g._id}`)}
-                        className="rounded-full bg-slate-700 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-slate-600 border border-slate-600"
+                        className="rounded-full border border-slate-600 bg-slate-700 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-slate-600"
                       >
                         Detail
                       </button>
                     </div>
-                    <div className="text-xs text-slate-400 whitespace-nowrap pb-2">
-                      {g.appraisals || 0} likes
-                    </div>
+                    <div className="whitespace-nowrap pb-2 text-xs text-slate-400">{g.appraisals || 0} likes</div>
                   </div>
                 </div>
               </Popup>
@@ -240,13 +203,8 @@ export default function LocalGemsMap() {
         <div className="z-2000 absolute inset-0 bg-black/30 p-4">
           <div className="mx-auto mt-20 w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
             <div className="flex items-center justify-between">
-              <div className="text-lg font-semibold text-gray-900">
-                Settings
-              </div>
-              <button
-                onClick={() => setSettingsOpen(false)}
-                className="rounded-full p-2 hover:bg-gray-100"
-              >
+              <div className="text-lg font-semibold text-gray-900">Settings</div>
+              <button onClick={() => setSettingsOpen(false)} className="rounded-full p-2 hover:bg-gray-100">
                 ✕
               </button>
             </div>
@@ -282,12 +240,8 @@ export default function LocalGemsMap() {
               </div>
             </div>
             <div className="mt-4">
-              <div className="text-sm font-medium text-gray-900">
-                Detection Range
-              </div>
-              <div className="mt-1 text-sm text-gray-500">
-                {metersLabel(rangeMeters)}
-              </div>
+              <div className="text-sm font-medium text-gray-900">Detection Range</div>
+              <div className="mt-1 text-sm text-gray-500">{metersLabel(rangeMeters)}</div>
 
               <input
                 className="mt-4 w-full"
@@ -320,13 +274,8 @@ export default function LocalGemsMap() {
         <div className="z-2000 absolute inset-0 bg-black/30 p-4">
           <div className="mx-auto mt-16 w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
             <div className="flex items-center justify-between">
-              <div className="text-lg font-semibold text-gray-900">
-                Add a Local Gem
-              </div>
-              <button
-                onClick={() => setAddOpen(false)}
-                className="rounded-full p-2 hover:bg-gray-100"
-              >
+              <div className="text-lg font-semibold text-gray-900">Add a Local Gem</div>
+              <button onClick={() => setAddOpen(false)} className="rounded-full p-2 hover:bg-gray-100">
                 ✕
               </button>
             </div>
@@ -343,9 +292,7 @@ export default function LocalGemsMap() {
             </div>
 
             <div className="mt-4">
-              <label className="text-sm font-medium text-gray-900">
-                Photo (optional)
-              </label>
+              <label className="text-sm font-medium text-gray-900">Photo (optional)</label>
               <input
                 type="file"
                 accept="image/*"
@@ -362,11 +309,7 @@ export default function LocalGemsMap() {
               {savingGem ? "Posting..." : "Post Gem"}
             </button>
 
-            {!location && (
-              <div className="mt-3 text-xs text-gray-500">
-                Location is required to post a gem.
-              </div>
-            )}
+            {!location && <div className="mt-3 text-xs text-gray-500">Location is required to post a gem.</div>}
           </div>
         </div>
       )}

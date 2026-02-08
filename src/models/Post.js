@@ -12,5 +12,4 @@ const PostSchema = new mongoose.Schema({
 
 export const MAX_POSTS_RADIUS = 5000; // 5km
 
-export default mongoose.models.Post ||
-  mongoose.model("Post", PostSchema, "post");
+export default mongoose.models.Post || mongoose.model("Post", PostSchema, "post");

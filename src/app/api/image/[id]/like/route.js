@@ -10,8 +10,7 @@ export async function POST(req, { params }) {
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
   const post = await Post.findById(id);
-  if (!post)
-    return NextResponse.json({ error: "Post not found" }, { status: 404 });
+  if (!post) return NextResponse.json({ error: "Post not found" }, { status: 404 });
 
   post.likes += 1;
   await post.save();

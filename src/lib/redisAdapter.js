@@ -12,17 +12,15 @@ const redisOptions = {
   },
 };
 
-export const redis = process.env.REDIS_URI
-  ? new Redis(process.env.REDIS_URI, redisOptions)
-  : new Redis(redisOptions);
+export const redis = process.env.REDIS_URI ? new Redis(process.env.REDIS_URI, redisOptions) : new Redis(redisOptions);
 
 // Silence initial connection error logs for local dev
-redis.on('error', (err) => {
+redis.on("error", (err) => {
   if (!process.env.REDIS_URI) {
     // Just log once or ignore if we know we don't have a URI
     return;
   }
-  console.error('[Redis Error]', err);
+  console.error("[Redis Error]", err);
 });
 
 export async function cacheData(key, fetchData, ttl) {

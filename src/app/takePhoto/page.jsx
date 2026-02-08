@@ -1,13 +1,7 @@
 "use client";
 
 import { useGeolocation } from "@/context/GeolocationContext";
-import {
-  Stage,
-  Layer,
-  Text,
-  Image as KonvaImage,
-  Transformer,
-} from "react-konva";
+import { Stage, Layer, Text, Image as KonvaImage, Transformer } from "react-konva";
 import { useRef, useState, useEffect, Fragment, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import useImage from "use-image";
@@ -19,14 +13,21 @@ export default function CameraWithEditor() {
 
   const [capturedImage, setCapturedImage] = useState(null);
   const [editedImage, setEditedImage] = useState(null);
-  const [videoDimensions, setVideoDimensions] = useState({ width: 360, height: 640 });
+  const [videoDimensions, setVideoDimensions] = useState({
+    width: 360,
+    height: 640,
+  });
   const [cameraRunning, setCameraRunning] = useState(false);
 
   // --- CAMERA LOGIC ---
   const startCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
+        video: {
+          facingMode: "environment",
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        },
         audio: false,
       });
       if (videoRef.current) {
@@ -75,7 +76,8 @@ export default function CameraWithEditor() {
     const targetRatio = 9 / 16;
     let sWidth = video.videoWidth;
     let sHeight = video.videoHeight;
-    let sX = 0, sY = 0;
+    let sX = 0,
+      sY = 0;
 
     if (sWidth / sHeight > targetRatio) {
       sWidth = sHeight * targetRatio;
@@ -94,13 +96,28 @@ export default function CameraWithEditor() {
   }
 
   return (
-    <div className="relative h-screen w-screen bg-slate-950 overflow-hidden text-slate-50">
+    <div className="relative h-screen w-screen overflow-hidden bg-slate-950 text-slate-50">
       {/* 1. Camera View */}
       {!capturedImage && !editedImage && (
         <div className="relative h-full w-full bg-black">
-          <video ref={videoRef} onCanPlay={handleCanPlay} playsInline autoPlay muted className="absolute inset-0 h-full w-full object-cover" />
-          <button onClick={() => router.push("/components/")} className="absolute left-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white">✕</button>
-          <button onClick={capturePicture} className="absolute bottom-12 left-1/2 z-10 h-20 w-20 -translate-x-1/2 rounded-full border-4 border-white bg-white/20 active:scale-95 transition" />
+          <video
+            ref={videoRef}
+            onCanPlay={handleCanPlay}
+            playsInline
+            autoPlay
+            muted
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <button
+            onClick={() => router.push("/components/")}
+            className="absolute left-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white"
+          >
+            ✕
+          </button>
+          <button
+            onClick={capturePicture}
+            className="absolute bottom-12 left-1/2 z-10 h-20 w-20 -translate-x-1/2 rounded-full border-4 border-white bg-white/20 transition active:scale-95"
+          />
           <canvas ref={canvasRef} className="hidden" />
         </div>
       )}
@@ -117,9 +134,7 @@ export default function CameraWithEditor() {
       )}
 
       {/* 3. Info Editor View */}
-      {editedImage && (
-        <InfoEditor imageUrl={editedImage} onBack={() => setEditedImage(null)} />
-      )}
+      {editedImage && <InfoEditor imageUrl={editedImage} onBack={() => setEditedImage(null)} />}
     </div>
   );
 }
@@ -130,7 +145,7 @@ function KonvaEditor({ imageUrl, width, height, onBack, onNext }) {
   const inputRef = useRef(null);
   const textRefs = useRef({});
   const transformerRefs = useRef({});
-  
+
   const [image] = useImage(imageUrl);
   const [textItems, setTextItems] = useState([]);
   const [activeTextId, setActiveTextId] = useState(null);
@@ -164,20 +179,39 @@ function KonvaEditor({ imageUrl, width, height, onBack, onNext }) {
     const newId = Date.now().toString();
     setActiveTextId(newId);
     setEditingText("");
-    setTextItems([...textItems, {
-      id: newId, text: "", x, y, scaleX: 1, scaleY: 1, rotation: 0, fontSize: 48, textColor: "white", finalized: false,
-    }]);
+    setTextItems([
+      ...textItems,
+      {
+        id: newId,
+        text: "",
+        x,
+        y,
+        scaleX: 1,
+        scaleY: 1,
+        rotation: 0,
+        fontSize: 48,
+        textColor: "white",
+        finalized: false,
+      },
+    ]);
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
   const finishEditingText = () => {
     if (activeTextId) {
-      setTextItems(textItems.map((item) => {
-        if (item.id === activeTextId) {
-          return { ...item, text: editingText, fontSize: item.fontSize || 24, finalized: true };
-        }
-        return item;
-      }));
+      setTextItems(
+        textItems.map((item) => {
+          if (item.id === activeTextId) {
+            return {
+              ...item,
+              text: editingText,
+              fontSize: item.fontSize || 24,
+              finalized: true,
+            };
+          }
+          return item;
+        }),
+      );
       setActiveTextId(null);
       setEditingText("");
     }
@@ -190,13 +224,8 @@ function KonvaEditor({ imageUrl, width, height, onBack, onNext }) {
   };
 
   return (
-    <div className="relative flex h-screen w-screen flex-col items-center justify-center bg-black overflow-hidden">
-      <Stage
-        width={winSize.w}
-        height={winSize.h}
-        ref={stageRef}
-        onClick={() => setSelectedTextId(null)}
-      >
+    <div className="relative flex h-screen w-screen flex-col items-center justify-center overflow-hidden bg-black">
+      <Stage width={winSize.w} height={winSize.h} ref={stageRef} onClick={() => setSelectedTextId(null)}>
         <Layer>
           {image && (
             <KonvaImage
@@ -212,33 +241,53 @@ function KonvaEditor({ imageUrl, width, height, onBack, onNext }) {
           {textItems.map((item) => (
             <Fragment key={item.id}>
               <Text
-                ref={(el) => { if (el) textRefs.current[item.id] = el; }}
+                ref={(el) => {
+                  if (el) textRefs.current[item.id] = el;
+                }}
                 name={item.id}
                 text={item.text}
-                x={item.x} y={item.y}
-                scaleX={item.scaleX} scaleY={item.scaleY}
+                x={item.x}
+                y={item.y}
+                scaleX={item.scaleX}
+                scaleY={item.scaleY}
                 rotation={item.rotation}
                 draggable
                 fontSize={item.fontSize}
                 fill={item.textColor || "white"}
-                stroke="black" strokeWidth={1}
+                stroke="black"
+                strokeWidth={1}
                 onClick={(e) => {
                   e.cancelBubble = true;
                   setSelectedTextId(item.id);
                   editExistingText(item.id, item.text, item.x, item.y);
                 }}
                 onDragEnd={(e) => {
-                  setTextItems(textItems.map(t => t.id === item.id ? { ...t, x: e.target.x(), y: e.target.y() } : t));
+                  setTextItems(
+                    textItems.map((t) => (t.id === item.id ? { ...t, x: e.target.x(), y: e.target.y() } : t)),
+                  );
                 }}
               />
               {selectedTextId === item.id && (
                 <Transformer
-                  ref={(el) => { if (el) transformerRefs.current[item.id] = el; }}
+                  ref={(el) => {
+                    if (el) transformerRefs.current[item.id] = el;
+                  }}
                   onTransformEnd={() => {
                     const node = textRefs.current[item.id];
-                    setTextItems(textItems.map(t => t.id === item.id ? {
-                      ...t, x: node.x(), y: node.y(), scaleX: node.scaleX(), scaleY: node.scaleY(), rotation: node.rotation()
-                    } : t));
+                    setTextItems(
+                      textItems.map((t) =>
+                        t.id === item.id
+                          ? {
+                              ...t,
+                              x: node.x(),
+                              y: node.y(),
+                              scaleX: node.scaleX(),
+                              scaleY: node.scaleY(),
+                              rotation: node.rotation(),
+                            }
+                          : t,
+                      ),
+                    );
                   }}
                 />
               )}
@@ -248,25 +297,69 @@ function KonvaEditor({ imageUrl, width, height, onBack, onNext }) {
       </Stage>
 
       {/* UI Overlay */}
-      <div className="absolute left-4 top-4 z-20"><button onClick={onBack} className="h-10 w-10 rounded-full bg-black/50 text-white">✕</button></div>
+      <div className="absolute left-4 top-4 z-20">
+        <button onClick={onBack} className="h-10 w-10 rounded-full bg-black/50 text-white">
+          ✕
+        </button>
+      </div>
       <div className="absolute right-4 top-4 z-20 flex gap-2">
-        <button onClick={() => addTextAtPosition(winSize.w/2 - 50, winSize.h/2)} className="h-10 w-10 rounded-full bg-black/50 text-xl font-bold">+</button>
-        <button onClick={() => { setSelectedTextId(null); finishEditingText(); setTimeout(() => onNext(stageRef.current.toDataURL()), 100); }} className="px-6 rounded-full bg-blue-600 font-bold">Next</button>
+        <button
+          onClick={() => addTextAtPosition(winSize.w / 2 - 50, winSize.h / 2)}
+          className="h-10 w-10 rounded-full bg-black/50 text-xl font-bold"
+        >
+          +
+        </button>
+        <button
+          onClick={() => {
+            setSelectedTextId(null);
+            finishEditingText();
+            setTimeout(() => onNext(stageRef.current.toDataURL()), 100);
+          }}
+          className="rounded-full bg-blue-600 px-6 font-bold"
+        >
+          Next
+        </button>
       </div>
 
       {/* Text Editing Panel */}
       {activeTextId !== null && (
         <div className="absolute left-4 right-4 top-20 z-30 rounded-2xl border border-slate-700 bg-slate-900/80 p-4 backdrop-blur-md">
-          <label className="mb-2 block text-xs font-bold text-slate-400 uppercase">Edit Text</label>
+          <label className="mb-2 block text-xs font-bold uppercase text-slate-400">Edit Text</label>
           <div className="flex flex-col gap-3">
-            <input ref={inputRef} value={editingText} onChange={(e) => setEditingText(e.target.value)} className="w-full rounded-lg bg-slate-800 p-2 outline-none border border-slate-700" placeholder="Type here..." />
+            <input
+              ref={inputRef}
+              value={editingText}
+              onChange={(e) => setEditingText(e.target.value)}
+              className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 outline-none"
+              placeholder="Type here..."
+            />
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-xs">Size</span>
-                <input type="number" value={textItems.find(i => i.id === activeTextId)?.fontSize || 48} onChange={(e) => setTextItems(textItems.map(t => t.id === activeTextId ? { ...t, fontSize: parseInt(e.target.value) || 0 } : t))} className="w-16 rounded bg-slate-800 p-1" />
+                <input
+                  type="number"
+                  value={textItems.find((i) => i.id === activeTextId)?.fontSize || 48}
+                  onChange={(e) =>
+                    setTextItems(
+                      textItems.map((t) =>
+                        t.id === activeTextId ? { ...t, fontSize: parseInt(e.target.value) || 0 } : t,
+                      ),
+                    )
+                  }
+                  className="w-16 rounded bg-slate-800 p-1"
+                />
               </div>
-              <input type="color" value={textItems.find(i => i.id === activeTextId)?.textColor || "#ffffff"} onChange={(e) => setTextItems(textItems.map(t => t.id === activeTextId ? { ...t, textColor: e.target.value } : t))} className="h-8 w-8 rounded bg-transparent" />
-              <button onClick={finishEditingText} className="rounded bg-blue-600 px-4 py-1 text-sm font-bold">Done</button>
+              <input
+                type="color"
+                value={textItems.find((i) => i.id === activeTextId)?.textColor || "#ffffff"}
+                onChange={(e) =>
+                  setTextItems(textItems.map((t) => (t.id === activeTextId ? { ...t, textColor: e.target.value } : t)))
+                }
+                className="h-8 w-8 rounded bg-transparent"
+              />
+              <button onClick={finishEditingText} className="rounded bg-blue-600 px-4 py-1 text-sm font-bold">
+                Done
+              </button>
             </div>
           </div>
         </div>
@@ -294,28 +387,44 @@ function InfoEditor({ imageUrl, onBack }) {
       formData.append("description", description);
       await fetch("/api/image", { method: "POST", body: formData });
       router.push("/components/");
-    } catch (e) { alert("Error uploading"); }
+    } catch (e) {
+      alert("Error uploading");
+    }
   };
 
   return (
     <div className="flex h-screen w-screen flex-col bg-slate-950">
-      <div className="z-20 flex items-center justify-between p-4 bg-slate-950/80">
-        <button onClick={onBack} className="text-2xl p-2">✕</button>
-        <button onClick={handlePublish} className="rounded-full bg-blue-600 px-6 py-2 font-bold">Publish</button>
+      <div className="z-20 flex items-center justify-between bg-slate-950/80 p-4">
+        <button onClick={onBack} className="p-2 text-2xl">
+          ✕
+        </button>
+        <button onClick={handlePublish} className="rounded-full bg-blue-600 px-6 py-2 font-bold">
+          Publish
+        </button>
       </div>
 
-      <div className="h-1/6 w-full flex justify-center bg-black overflow-hidden">
-        <img src={imageUrl} alt="Preview" className="h-full object-contain aspect-[9/16]" />
+      <div className="flex h-1/6 w-full justify-center overflow-hidden bg-black">
+        <img src={imageUrl} alt="Preview" className="aspect-[9/16] h-full object-contain" />
       </div>
 
-      <div className="flex flex-1 flex-col gap-6 bg-slate-900 p-6 rounded-t-3xl mt-4 border-t border-slate-800">
+      <div className="mt-4 flex flex-1 flex-col gap-6 rounded-t-3xl border-t border-slate-800 bg-slate-900 p-6">
         <div>
-          <label className="mb-2 block text-xs font-bold text-slate-500 uppercase">Title</label>
-          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Give it a title..." className="w-full rounded-xl bg-slate-800 p-4 outline-none border border-slate-700 focus:border-blue-500" />
+          <label className="mb-2 block text-xs font-bold uppercase text-slate-500">Title</label>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Give it a title..."
+            className="w-full rounded-xl border border-slate-700 bg-slate-800 p-4 outline-none focus:border-blue-500"
+          />
         </div>
-        <div className="flex-1 flex flex-col">
-          <label className="mb-2 block text-xs font-bold text-slate-500 uppercase">Description</label>
-          <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Describe your post..." className="w-full flex-1 rounded-xl bg-slate-800 p-4 resize-none outline-none border border-slate-700 focus:border-blue-500" />
+        <div className="flex flex-1 flex-col">
+          <label className="mb-2 block text-xs font-bold uppercase text-slate-500">Description</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Describe your post..."
+            className="w-full flex-1 resize-none rounded-xl border border-slate-700 bg-slate-800 p-4 outline-none focus:border-blue-500"
+          />
         </div>
       </div>
     </div>
