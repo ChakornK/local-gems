@@ -59,7 +59,6 @@ export default function LocalGemsMap() {
     })();
   }, []);
 
-  // Load gems (works with your backend later, but will also work with the mock API I can give you)
   useEffect(() => {
     (async () => {
       if (geolocationLoading || !location) return;
@@ -106,35 +105,8 @@ export default function LocalGemsMap() {
 
   return (
     <div className="relative h-screen w-full bg-white">
-      {/* Top bar */}
-      <div className="z-1000 pointer-events-none absolute left-0 right-0 top-0 flex items-center justify-between px-4 pt-4">
-        <div className="pointer-events-auto ml-12 rounded-full bg-slate-900 px-4 py-2 shadow-sm ring-1 ring-white/10">
-          <div className="text-xs text-slate-400">Current location</div>
-          <div className="text-sm font-medium text-white">
-            {location
-              ? `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`
-              : geolocationError
-                ? "Location unavailable"
-                : "Locating..."}
-          </div>
-          <div className="text-xs text-slate-400">
-            Range: {metersLabel(rangeMeters)} • {mapStyle === "satellite" ? "Satellite" : "Standard"}
-            {loadingGems ? " • Loading..." : ""}
-          </div>
-        </div>
-
-        <button
-          onClick={() => setSettingsOpen(true)}
-          className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-slate-900 text-white shadow-sm ring-1 ring-white/10 transition-colors hover:bg-black"
-          aria-label="Settings"
-          title="Settings"
-        >
-          <Settings size={20} />
-        </button>
-      </div>
-
       {/* Map */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 z-0">
         <MapContainer
           key={!geolocationLoading ? "map-ready" : "map-loading"}
           center={center}
@@ -183,7 +155,7 @@ export default function LocalGemsMap() {
                         Appraise
                       </button>
                       <button
-                        onClick={() => route.push(`/sign/${g._id}`)}
+                        onClick={() => route.push(`/gem/${g._id}`)}
                         className="rounded-full border border-slate-600 bg-slate-700 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-slate-600"
                       >
                         Detail
@@ -196,6 +168,32 @@ export default function LocalGemsMap() {
             </Marker>
           ))}
         </MapContainer>
+      </div>
+
+      {/* Settings button */}
+      <button
+        onClick={() => setSettingsOpen(true)}
+        className="pointer-events-auto absolute bottom-24 right-4 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-slate-900 text-white shadow-sm ring-1 ring-white/10 transition-colors hover:bg-black"
+        aria-label="Settings"
+        title="Settings"
+      >
+        <Settings size={20} />
+      </button>
+
+      {/* Location stat */}
+      <div className="pointer-events-auto absolute bottom-24 left-4 rounded-2xl bg-slate-900 px-4 py-2 shadow-sm ring-1 ring-white/10">
+        <div className="text-xs text-slate-400">Current location</div>
+        <div className="text-sm font-medium text-white">
+          {location
+            ? `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`
+            : geolocationError
+              ? "Location unavailable"
+              : "Locating..."}
+        </div>
+        <div className="text-xs text-slate-400">
+          Range: {metersLabel(rangeMeters)} • {mapStyle === "satellite" ? "Satellite" : "Standard"}
+          {loadingGems ? " • Loading..." : ""}
+        </div>
       </div>
 
       {/* Settings modal */}
