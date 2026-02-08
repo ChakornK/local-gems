@@ -10,6 +10,12 @@ body {
     Roboto,
     Arial,
     sans-serif;
+  overscroll-behavior: none;
+  touch-action: pan-y;
+}
+
+* {
+  overscroll-behavior: contain;
 }
 
 /* Leaflet popup custom styling */
