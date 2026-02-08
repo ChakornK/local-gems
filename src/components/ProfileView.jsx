@@ -43,6 +43,43 @@ const emojis = {
   sauropod: "🦕",
 };
 
+const emojiColors = {
+  person: "#E2E8F0", // Slate
+  robot: "#CBD5E1", // Steel
+  ghost: "#F8FAFC", // White/Ghost
+  alien_monster: "#E9D5FF", // Purple
+  dog: "#FFEDD5", // Orange
+  cat: "#FEF3C7", // Amber
+  fox: "#FFEDD5", // Orange
+  panda: "#F1F5F9", // White/Gray
+  bear: "#FDE68A", // Brown/Yellow
+  koala: "#E2E8F0", // Gray
+  tiger: "#FFEDD5", // Orange
+  lion: "#FEF3C7", // Yellow
+  cow: "#F1F5F9", // Black/White
+  pig: "#FCE7F3", // Pink
+  frog: "#DCFCE7", // Green
+  monkey: "#FEF3C7", // Brown
+  rabbit: "#F1F5F9", // White
+  hamster: "#FEF3C7", // Brown
+  raccoon: "#E2E8F0", // Gray
+  beaver: "#FEF3C7", // Brown
+  sloth: "#FEF3C7", // Brown
+  chicken: "#FEF3C7", // Yellow
+  penguin: "#E0F2FE", // Blue
+  owl: "#FEF3C7", // Brown
+  eagle: "#FEF3C7", // Brown
+  parrot: "#DCFCE7", // Green
+  fish: "#E0F2FE", // Blue
+  octopus: "#FCE7F3", // Pink
+  shark: "#E0F2FE", // Blue
+  whale: "#E0F2FE", // Blue
+  turtle: "#DCFCE7", // Green
+  lizard: "#DCFCE7", // Green
+  snake: "#DCFCE7", // Green
+  sauropod: "#DCFCE7", // Green
+};
+
 export default function ProfileView({ isMine, userId }) {
   const router = useRouter();
   const [userData, setUserData] = useState(null);
@@ -85,7 +122,6 @@ export default function ProfileView({ isMine, userId }) {
         body: JSON.stringify(updates),
       });
       if (res.ok) {
-        // Refresh local data instead of full page refresh
         const updatedData = await res.json();
         if (updatedData.user) {
           setUserData(updatedData.user);
@@ -169,19 +205,40 @@ export default function ProfileView({ isMine, userId }) {
         </div>
       )}
 
-      {/* Header / Cover Area */}
-      <button className="relative h-48 bg-slate-900" onClick={() => isMine && setIsEmojiSelectorOpen(true)}>
-        <div className="absolute -bottom-12 left-6">
-          <div className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-4 border-slate-900 bg-slate-800 text-4xl">
+      {/* Header / Cover Area with Mosaic */}
+      <div className="relative h-48 bg-slate-900">
+        <div className="absolute inset-0 overflow-clip">
+          <div
+            className="grayscale-50 absolute inset-0 grid select-none grid-cols-6 items-center justify-center gap-4 pb-12 opacity-10 transition-all duration-700"
+            style={{ transform: "rotate(-12deg) scale(1.5)" }}
+          >
+            {Array.from({ length: 48 }).map((_, i) => (
+              <span key={i} className="text-4xl">
+                {emojis[selectedEmoji]}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="bg-linear-to-b absolute inset-0 from-transparent via-slate-900/50 to-slate-900" />
+
+        <button
+          className="absolute -bottom-10 left-6 z-10"
+          onClick={() => isMine && setIsEmojiSelectorOpen(true)}
+          disabled={!isMine}
+        >
+          <div
+            className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-4 border-slate-900 text-4xl shadow-xl transition-all duration-300"
+            style={{ backgroundColor: emojiColors[selectedEmoji] || "#E2E8F0" }}
+          >
             {emojis[selectedEmoji]}
           </div>
           {isMine && (
-            <div className="absolute bottom-0 right-0 rounded-full bg-slate-600 p-1.5 text-white">
+            <div className="absolute bottom-1 right-1 flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 p-1.5 text-white shadow-md ring-2 ring-slate-900 transition-transform active:scale-90">
               <Icon icon="mingcute:edit-2-line" fontSize={18} />
             </div>
           )}
-        </div>
-      </button>
+        </button>
+      </div>
       {isMine && (
         <BottomSheet open={isEmojiSelectorOpen} onClose={() => setIsEmojiSelectorOpen(false)}>
           <div className="flex justify-end p-4">
