@@ -414,8 +414,13 @@ function InfoEditor({ imageUrl, onBack }) {
       formData.append("lng", location?.lng?.toString() || "0");
       formData.append("title", title);
       formData.append("description", description);
-      await fetch("/api/image", { method: "POST", body: formData });
-      router.push("/components/");
+      const res = await fetch("/api/image", { method: "POST", body: formData });
+      const data = await res.json();
+      if (data._id) {
+        router.push(`/?gemId=${data._id}`, { scroll: false });
+      } else {
+        router.push("/", { scroll: false });
+      }
     } catch (e) {
       alert("Error uploading");
     }
