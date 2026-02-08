@@ -49,6 +49,7 @@ export default function LocalGemsMap() {
   const [savingGem, setSavingGem] = useState(false);
 
   const route = useRouter();
+  const [mapStyle, setMapStyle] = useState("satellite"); // "satellite" | "standard"
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -142,7 +143,8 @@ export default function LocalGemsMap() {
                 : "Locating..."}
           </div>
           <div className="text-xs text-slate-400">
-            Range: {metersLabel(rangeMeters)}
+            Range: {metersLabel(rangeMeters)} •{" "}
+            {mapStyle === "satellite" ? "Satellite" : "Standard"}
             {loadingGems ? " • Loading..." : ""}
           </div>
         </div>
@@ -165,10 +167,17 @@ export default function LocalGemsMap() {
           zoom={15}
           className="h-full w-full"
         >
-          <TileLayer
-            attribution="Tiles &copy; Esri"
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-          />
+          {mapStyle === "satellite" ? (
+            <TileLayer
+              attribution="Tiles &copy; Esri"
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+            />
+          ) : (
+            <TileLayer
+              attribution="&copy; OpenStreetMap contributors"
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+          )}
 
           {location && (
             <>
@@ -233,7 +242,37 @@ export default function LocalGemsMap() {
                 ✕
               </button>
             </div>
+            <div className="mt-4">
+              <div className="text-sm font-medium text-gray-900">Map Style</div>
 
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMapStyle("standard")}
+                  className={
+                    "rounded-xl px-3 py-2 text-sm font-medium ring-1 transition " +
+                    (mapStyle === "standard"
+                      ? "bg-slate-900 text-white ring-slate-900"
+                      : "bg-white text-slate-900 ring-gray-200 hover:bg-gray-50")
+                  }
+                >
+                  Standard
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMapStyle("satellite")}
+                  className={
+                    "rounded-xl px-3 py-2 text-sm font-medium ring-1 transition " +
+                    (mapStyle === "satellite"
+                      ? "bg-slate-900 text-white ring-slate-900"
+                      : "bg-white text-slate-900 ring-gray-200 hover:bg-gray-50")
+                  }
+                >
+                  Satellite
+                </button>
+              </div>
+            </div>
             <div className="mt-4">
               <div className="text-sm font-medium text-gray-900">
                 Detection Range
