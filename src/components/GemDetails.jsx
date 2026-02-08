@@ -129,8 +129,10 @@ export default function GemDetails({ gemId, onClose }) {
       ) : (
         <>
           {/* Image Section */}
-          <div className="relative h-[65%] w-full shrink-0 bg-gray-900">
-            <Image src={sign.image} alt="Local Gem" fill className="object-contain" priority />
+          <div className="relative flex h-[65%] w-full shrink-0 items-center justify-center bg-slate-950">
+            <div className="aspect-9/16 relative h-full overflow-hidden">
+              <Image src={sign.image} alt="Local Gem" fill className="object-cover" priority />
+            </div>
             <button
               onClick={handleClose}
               className="absolute left-4 top-4 z-10 rounded-full bg-black/40 p-2 text-white transition-colors hover:bg-black/60"
