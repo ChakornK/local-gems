@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Icon } from "@iconify/react";
@@ -14,6 +14,7 @@ export default function GemDetails({ gemId, onClose }) {
   const [copied, setCopied] = useState(false);
   const [showHearts, setShowHearts] = useState([]);
   const [pulseCount, setPulseCount] = useState(0);
+  const pendingRequestsRef = useRef(0);
 
   useEffect(() => {
     if (!gemId) return;
@@ -37,18 +38,20 @@ export default function GemDetails({ gemId, onClose }) {
   async function onLike() {
     if (!sign) return;
 
-    const isLiked = sign.isLiked;
-    const previousLikes = sign.likes || 0;
+    const previousIsLiked = sign.isLiked;
+    const previousLikesCount = sign.likes || 0;
+
+    pendingRequestsRef.current++;
 
     // Optimistic Update
-    setSign((prev) => ({
-      ...prev,
-      likes: isLiked ? Math.max(0, previousLikes - 1) : previousLikes + 1,
-      isLiked: !isLiked,
-    }));
+    setSign((prev) => {
+      const newIsLiked = !prev.isLiked;
+      const newLikes = newIsLiked ? (prev.likes || 0) + 1 : Math.max(0, (prev.likes || 0) - 1);
+      return { ...prev, likes: newLikes, isLiked: newIsLiked };
+    });
     setPulseCount((prev) => prev + 1);
 
-    if (!isLiked) {
+    if (!previousIsLiked) {
       const newHearts = Array.from({ length: 6 }).map((_, i) => ({
         id: Date.now() + i,
         angle: (Math.random() - 0.5) * 60,
@@ -63,12 +66,21 @@ export default function GemDetails({ gemId, onClose }) {
 
     try {
       const res = await fetch(`/api/image/${gemId}/like`, { method: "POST" });
-      if (!res.ok) throw new Error("Failed to like");
+      if (!res.ok) return;
       const data = await res.json();
-      setSign((prev) => ({ ...prev, likes: data.likes, isLiked: data.isLiked }));
+
+      pendingRequestsRef.current--;
+
+      if (pendingRequestsRef.current === 0) {
+        setSign((prev) => ({ ...prev, likes: data.likes, isLiked: data.isLiked }));
+      }
     } catch (err) {
       console.error(err);
-      setSign((prev) => ({ ...prev, likes: previousLikes, isLiked: isLiked }));
+      pendingRequestsRef.current--;
+
+      if (pendingRequestsRef.current === 0) {
+        setSign((prev) => ({ ...prev, likes: previousLikesCount, isLiked: previousIsLiked }));
+      }
     }
   }
 
@@ -169,7 +181,7 @@ export default function GemDetails({ gemId, onClose }) {
                   className={`relative flex w-full items-center justify-center gap-2 rounded-xl py-3 font-bold text-white shadow-lg transition-all ${
                     sign.isLiked
                       ? "bg-linear-to-r from-pink-500 via-rose-500 to-orange-500 hover:from-pink-600 hover:to-orange-600"
-                      : "bg-slate-800 border border-slate-700 hover:bg-slate-700"
+                      : "border border-slate-700 bg-slate-800 hover:bg-slate-700"
                   }`}
                 >
                   <motion.div
