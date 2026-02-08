@@ -1,7 +1,7 @@
 "use client";
 
 import { useGeolocation } from "@/context/GeolocationContext";
-import { Stage, Layer, Text, Image as KonvaImage, Transformer } from "react-konva";
+import { Stage, Layer, Text, Image as KonvaImage, Transformer, Group, Label, Tag } from "react-konva";
 import { useRef, useState, useEffect, Fragment, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import useImage from "use-image";
@@ -144,7 +144,7 @@ export default function CameraWithEditor() {
 
           <button
             onClick={() => router.push("/")}
-            className="absolute left-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white"
+            className="absolute left-4 top-8 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white"
           >
             ✕
           </button>
@@ -168,18 +168,20 @@ export default function CameraWithEditor() {
   );
 }
 
-// --- EDITOR COMPONENT (Integrated with your Text logic) ---
+// --- EDITOR COMPONENT ---
 function KonvaEditor({ imageUrl, width, height, onBack, onNext }) {
   const stageRef = useRef(null);
-  const inputRef = useRef(null);
   const textRefs = useRef({});
   const transformerRefs = useRef({});
 
   const [image] = useImage(imageUrl);
   const [textItems, setTextItems] = useState([]);
-  const [activeTextId, setActiveTextId] = useState(null);
-  const [editingText, setEditingText] = useState("");
   const [selectedTextId, setSelectedTextId] = useState(null);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingItemId, setEditingItemId] = useState(null);
+  const [currentText, setCurrentText] = useState("");
+  const [currentStyle, setCurrentStyle] = useState("bg-black"); // plain-white, plain-black, bg-black, bg-white
 
   // Responsive stage sizing
   const [winSize, setWinSize] = useState({ w: 0, h: 0 });
@@ -204,52 +206,167 @@ function KonvaEditor({ imageUrl, width, height, onBack, onNext }) {
     }
   }, [selectedTextId]);
 
-  const addTextAtPosition = (x, y) => {
+  const startAddingText = () => {
     const newId = Date.now().toString();
-    setActiveTextId(newId);
-    setEditingText("");
-    setTextItems([
-      ...textItems,
-      {
-        id: newId,
-        text: "",
-        x,
-        y,
-        scaleX: 1,
-        scaleY: 1,
-        rotation: 0,
-        fontSize: 48,
-        textColor: "white",
-        finalized: false,
-      },
-    ]);
-    setTimeout(() => inputRef.current?.focus(), 0);
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    const newItem = {
+      id: newId,
+      text: "",
+      x: centerX,
+      y: centerY,
+      scaleX: 1,
+      scaleY: 1,
+      rotation: 0,
+      fontSize: 48,
+      styleType: "bg-black", // Default style
+    };
+
+    setTextItems([...textItems, newItem]);
+    setEditingItemId(newId);
+    setCurrentText("");
+    setCurrentStyle("bg-black");
+    setIsEditing(true);
+    setSelectedTextId(null);
   };
 
-  const finishEditingText = () => {
-    if (activeTextId) {
-      setTextItems(
-        textItems.map((item) => {
-          if (item.id === activeTextId) {
-            return {
-              ...item,
-              text: editingText,
-              fontSize: item.fontSize || 24,
-              finalized: true,
-            };
-          }
-          return item;
-        }),
-      );
-      setActiveTextId(null);
-      setEditingText("");
+  const startEditingText = (item) => {
+    setEditingItemId(item.id);
+    setCurrentText(item.text);
+    setCurrentStyle(item.styleType || "bg-black");
+    setIsEditing(true);
+    setSelectedTextId(null);
+  };
+
+  const saveText = () => {
+    if (editingItemId) {
+      if (currentText.trim() === "") {
+        // Remove empty text items
+        setTextItems(textItems.filter((i) => i.id !== editingItemId));
+      } else {
+        setTextItems(
+          textItems.map((item) =>
+            item.id === editingItemId ? { ...item, text: currentText, styleType: currentStyle } : item,
+          ),
+        );
+      }
     }
+    setIsEditing(false);
+    setEditingItemId(null);
   };
 
-  const editExistingText = (id, text, x, y) => {
-    setActiveTextId(id);
-    setEditingText(text);
-    setTimeout(() => inputRef.current?.focus(), 0);
+  const handleNext = () => {
+    setSelectedTextId(null);
+    setTimeout(() => {
+      onNext(stageRef.current.toDataURL());
+    }, 100);
+  };
+
+  // Helper to render text based on style
+  const renderTextItem = (item) => {
+    const isSelected = selectedTextId === item.id;
+    const isBeingEdited = editingItemId === item.id;
+
+    // Hide item while editing to avoid duplication with input preview (optional, but cleaner)
+    // For now, we keep it visible but maybe dimmed? Or just let it update live?
+    // Let's let it update live if we weren't using a separate form, but since we are,
+    // we might want to hide the canvas version if it overlaps.
+    // Actually, usually you want to see the canvas version update as you type.
+    // But since our input is fixed at bottom, we'll update the item in real-time?
+    // Simplified: We update local state 'currentText' and only commit to 'textItems' on save.
+    // So the canvas item won't update until save.
+    // If we want live preview, we need to update textItems on change.
+    // Let's stick to update-on-save for simplicity, or we can do live preview.
+    // Let's do live preview by temporarily updating the item in the list if it matches editingItemId.
+
+    // Actually, distinct separation is easier. The user types in the box, then clicks done.
+    // BUT, the user wants to see how it looks on the image.
+    // So we should probably render a "preview" item if we are editing.
+
+    const textToRender = isBeingEdited ? currentText : item.text;
+    const styleToRender = isBeingEdited ? currentStyle : item.styleType;
+
+    if (!textToRender && !isBeingEdited) return null; // Don't render empty finished items
+
+    const commonProps = {
+      x: item.x,
+      y: item.y,
+      rotation: item.rotation,
+      scaleX: item.scaleX,
+      scaleY: item.scaleY,
+      draggable: !isEditing,
+      onClick: (e) => {
+        if (isEditing) return;
+        e.cancelBubble = true;
+        setSelectedTextId(item.id);
+        startEditingText(item);
+      },
+      onDragEnd: (e) => {
+        setTextItems(textItems.map((t) => (t.id === item.id ? { ...t, x: e.target.x(), y: e.target.y() } : t)));
+      },
+    };
+
+    // Style configs
+    let fill = "white";
+    let stroke = null;
+    let background = null;
+
+    switch (styleToRender) {
+      case "plain-black":
+        fill = "black";
+        break;
+      case "bg-black":
+        fill = "white";
+        background = "black";
+        break;
+      case "bg-white":
+        fill = "black";
+        background = "white";
+        break;
+      case "plain-white":
+      default:
+        fill = "white";
+        break;
+    }
+
+    if (background) {
+      return (
+        <Group
+          key={item.id}
+          {...commonProps}
+          ref={(el) => {
+            if (el) textRefs.current[item.id] = el;
+          }}
+        >
+          <Label>
+            <Tag
+              fill={background}
+              cornerRadius={10}
+              pointerDirection="none"
+              pointerWidth={10}
+              pointerHeight={10}
+              lineJoin="round"
+            />
+            <Text text={textToRender} fontSize={item.fontSize} padding={10} fill={fill} align="center" />
+          </Label>
+        </Group>
+      );
+    }
+
+    return (
+      <Text
+        key={item.id}
+        ref={(el) => {
+          if (el) textRefs.current[item.id] = el;
+        }}
+        {...commonProps}
+        text={textToRender}
+        fontSize={item.fontSize}
+        fill={fill}
+        padding={10}
+      />
+    );
   };
 
   return (
@@ -269,34 +386,8 @@ function KonvaEditor({ imageUrl, width, height, onBack, onNext }) {
           )}
           {textItems.map((item) => (
             <Fragment key={item.id}>
-              <Text
-                ref={(el) => {
-                  if (el) textRefs.current[item.id] = el;
-                }}
-                name={item.id}
-                text={item.text}
-                x={item.x}
-                y={item.y}
-                scaleX={item.scaleX}
-                scaleY={item.scaleY}
-                rotation={item.rotation}
-                draggable
-                fontSize={item.fontSize}
-                fill={item.textColor || "white"}
-                stroke="black"
-                strokeWidth={1}
-                onClick={(e) => {
-                  e.cancelBubble = true;
-                  setSelectedTextId(item.id);
-                  editExistingText(item.id, item.text, item.x, item.y);
-                }}
-                onDragEnd={(e) => {
-                  setTextItems(
-                    textItems.map((t) => (t.id === item.id ? { ...t, x: e.target.x(), y: e.target.y() } : t)),
-                  );
-                }}
-              />
-              {selectedTextId === item.id && (
+              {renderTextItem(item)}
+              {selectedTextId === item.id && !isEditing && (
                 <Transformer
                   ref={(el) => {
                     if (el) transformerRefs.current[item.id] = el;
@@ -325,74 +416,109 @@ function KonvaEditor({ imageUrl, width, height, onBack, onNext }) {
         </Layer>
       </Stage>
 
-      {/* UI Overlay */}
-      <div className="absolute left-4 top-4 z-20">
-        <button onClick={onBack} className="h-10 w-10 rounded-full bg-black/50 text-white">
-          ✕
-        </button>
-      </div>
-      <div className="absolute right-4 top-4 z-20 flex gap-2">
-        <button
-          onClick={() => addTextAtPosition(winSize.w / 2 - 50, winSize.h / 2)}
-          className="h-10 w-10 rounded-full bg-black/50 text-xl font-bold"
-        >
-          +
-        </button>
-        <button
-          onClick={() => {
-            setSelectedTextId(null);
-            finishEditingText();
-            setTimeout(() => onNext(stageRef.current.toDataURL()), 100);
-          }}
-          className="rounded-full bg-blue-600 px-6 font-bold"
-        >
-          Next
+      {/* Top Controls */}
+      {!isEditing && (
+        <>
+          <div className="absolute left-4 top-8 z-20">
+            <button onClick={onBack} className="h-10 w-10 rounded-full bg-black/50 text-white">
+              ✕
+            </button>
+          </div>
+          <div className="absolute right-4 top-8 z-20">
+            <button onClick={handleNext} className="rounded-full bg-blue-600 px-6 py-2 font-bold text-white shadow-lg">
+              Next
+            </button>
+          </div>
+
+          {/* Bottom Controls */}
+          <div className="absolute bottom-28 left-0 right-0 z-20 flex justify-center">
+            <button
+              onClick={startAddingText}
+              className="flex items-center gap-2 rounded-full bg-black/60 px-6 py-3 font-semibold text-white backdrop-blur-md transition-transform active:scale-95"
+            >
+              <span className="text-xl">+</span> Add caption
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Caption Input Form */}
+      {isEditing && (
+        <CaptionInput
+          text={currentText}
+          setText={setCurrentText}
+          styleType={currentStyle}
+          setStyleType={setCurrentStyle}
+          onDone={saveText}
+        />
+      )}
+    </div>
+  );
+}
+
+function CaptionInput({ text, setText, styleType, setStyleType, onDone }) {
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
+
+  const styles = [
+    { id: "plain-white", bg: "bg-black", text: "text-white", label: "Aa" }, // UI preview colors
+    { id: "plain-black", bg: "bg-white", text: "text-black", label: "Aa" },
+    { id: "bg-black", bg: "bg-black", text: "text-white", border: "border-white", label: "Aa" },
+    { id: "bg-white", bg: "bg-white", text: "text-black", border: "border-gray-200", label: "Aa" },
+  ];
+
+  // Map internal style IDs to UI classes for the selector buttons
+  const getStyleClasses = (id) => {
+    switch (id) {
+      case "plain-white":
+        return "bg-gray-800 text-white";
+      case "plain-black":
+        return "bg-gray-200 text-black";
+      case "bg-black":
+        return "bg-black text-white border border-gray-600";
+      case "bg-white":
+        return "bg-white text-black border border-gray-300";
+      default:
+        return "bg-gray-800 text-white";
+    }
+  };
+
+  return (
+    <div className="absolute bottom-0 left-0 right-0 z-50 flex flex-col gap-4 rounded-t-2xl border-t border-slate-800 bg-slate-900 p-4 pb-8 shadow-2xl">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-bold uppercase text-slate-500">Caption</span>
+        <button onClick={onDone} className="rounded-full bg-blue-600 px-4 py-1 text-sm font-bold text-white">
+          Done
         </button>
       </div>
 
-      {/* Text Editing Panel */}
-      {activeTextId !== null && (
-        <div className="absolute left-4 right-4 top-20 z-30 rounded-2xl border border-slate-700 bg-slate-900/80 p-4 backdrop-blur-md">
-          <label className="mb-2 block text-xs font-bold uppercase text-slate-400">Edit Text</label>
-          <div className="flex flex-col gap-3">
-            <input
-              ref={inputRef}
-              value={editingText}
-              onChange={(e) => setEditingText(e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 outline-none"
-              placeholder="Type here..."
-            />
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xs">Size</span>
-                <input
-                  type="number"
-                  value={textItems.find((i) => i.id === activeTextId)?.fontSize || 48}
-                  onChange={(e) =>
-                    setTextItems(
-                      textItems.map((t) =>
-                        t.id === activeTextId ? { ...t, fontSize: parseInt(e.target.value) || 0 } : t,
-                      ),
-                    )
-                  }
-                  className="w-16 rounded bg-slate-800 p-1"
-                />
-              </div>
-              <input
-                type="color"
-                value={textItems.find((i) => i.id === activeTextId)?.textColor || "#ffffff"}
-                onChange={(e) =>
-                  setTextItems(textItems.map((t) => (t.id === activeTextId ? { ...t, textColor: e.target.value } : t)))
-                }
-                className="h-8 w-8 rounded bg-transparent"
-              />
-              <button onClick={finishEditingText} className="rounded bg-blue-600 px-4 py-1 text-sm font-bold">
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <input
+        ref={inputRef}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Type your caption..."
+        className="w-full bg-transparent text-xl text-white outline-none placeholder:text-slate-600"
+      />
+
+      <div className="flex gap-4 overflow-x-auto pb-2 pt-2">
+        {styles.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => setStyleType(s.id)}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-transform
+                            ${getStyleClasses(s.id)}
+                            ${styleType === s.id ? "scale-110 ring-2 ring-blue-500" : ""}
+                        `}
+          >
+            Aa
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
