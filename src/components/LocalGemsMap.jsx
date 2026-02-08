@@ -43,7 +43,7 @@ export default function LocalGemsMap({ initialGemId }) {
   const [selectedGemId, setSelectedGemId] = useState(initialGemId || null);
 
   const router = useRouter();
-  const [mapStyle, setMapStyle] = useState("satellite"); // "satellite" | "standard"
+  const [mapStyle, setMapStyle] = useState("standard"); // "satellite" | "standard"
 
   useEffect(() => {
     if (initialGemId) {
