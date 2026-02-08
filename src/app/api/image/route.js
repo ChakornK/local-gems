@@ -24,7 +24,7 @@ export async function GET(req) {
   await dbConnect();
 
   // Round coordinates to ~110m precision (3 decimal places) for caching "similar" locations
-  const cacheKey = `posts:nearby:${lat.toFixed(3)}:${lng.toFixed(3)}`;
+  const cacheKey = `posts:nearby:${lat.toFixed(3)}:${lng.toFixed(3)}:${radiusMeters.toFixed(0)}`;
 
   const radius = Math.min(radiusMeters, MAX_POSTS_RADIUS);
   try {

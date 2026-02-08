@@ -34,6 +34,7 @@ export default function LocalGemsMap({ initialGemId }) {
   const { location, loading: geolocationLoading, error: geolocationError } = useGeolocation();
 
   const [rangeMeters, setRangeMeters] = useState(1000);
+  const [appliedRange, setAppliedRange] = useState(1000);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const [gems, setGems] = useState([]);
@@ -100,7 +101,7 @@ export default function LocalGemsMap({ initialGemId }) {
         const qs = new URLSearchParams({
           lat: location.lat.toString(),
           lng: location.lng.toString(),
-          radiusMeters: rangeMeters.toString(),
+          radiusMeters: appliedRange.toString(),
         });
 
         const res = await fetch(`/api/image?${qs.toString()}`);
@@ -113,7 +114,14 @@ export default function LocalGemsMap({ initialGemId }) {
         setLoadingGems(false);
       }
     })();
-  }, [location, rangeMeters]);
+  }, [location, appliedRange]);
+
+  const handleCloseSettings = () => {
+    if (rangeMeters !== appliedRange) {
+      setAppliedRange(rangeMeters);
+    }
+    setSettingsOpen(false);
+  };
 
   const center = useMemo(() => {
     return location ? [location.lat, location.lng] : [49.2827, -123.1207]; // fallback (Vancouver)
@@ -207,12 +215,12 @@ export default function LocalGemsMap({ initialGemId }) {
       </div>
 
       {/* Settings BottomSheet */}
-      <BottomSheet open={settingsOpen} onClose={() => setSettingsOpen(false)}>
+      <BottomSheet open={settingsOpen} onClose={handleCloseSettings}>
         <div className="flex h-full flex-col overflow-hidden bg-slate-900 p-6 text-white">
           <div className="flex items-center justify-between pb-4">
             <h2 className="text-xl font-bold">Settings</h2>
             <button
-              onClick={() => setSettingsOpen(false)}
+              onClick={handleCloseSettings}
               className="rounded-full bg-slate-800 p-2 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
             >
               <Icon icon="mingcute:close-line" fontSize={24} />
@@ -287,7 +295,7 @@ export default function LocalGemsMap({ initialGemId }) {
           </div>
 
           <button
-            onClick={() => setSettingsOpen(false)}
+            onClick={handleCloseSettings}
             className="mt-6 w-full rounded-2xl bg-blue-500 py-4 text-lg font-bold text-white shadow-lg shadow-blue-500/20 transition-transform hover:bg-blue-600 active:scale-[0.98]"
           >
             Done
