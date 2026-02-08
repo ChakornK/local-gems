@@ -131,6 +131,7 @@ export default function LocalGemsMap({ initialGemId }) {
           key={!geolocationLoading ? "map-ready" : "map-loading"}
           center={center}
           zoom={15}
+          zoomControl={false}
           className="h-full w-full"
         >
           {mapStyle === "satellite" ? (
