@@ -203,8 +203,8 @@ export default function LocalGemsMap() {
           className="h-full w-full"
         >
           <TileLayer
-            attribution="&copy; OpenStreetMap contributors"
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution="Tiles &copy; Esri"
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           />
 
           {coords && (
@@ -251,8 +251,6 @@ export default function LocalGemsMap() {
           ))}
         </MapContainer>
       </div>
-
-
 
       {/* Settings modal */}
       {settingsOpen && (
