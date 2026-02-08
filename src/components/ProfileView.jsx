@@ -162,32 +162,7 @@ export default function ProfileView({ isMine, userId }) {
     likes: 0,
   };
 
-  const myposts = [
-    {
-      id: 1,
-      title: "Secret Garden",
-      image: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?q=80&w=3432&auto=format&fit=crop",
-      likes: 45,
-    },
-    {
-      id: 2,
-      title: "Best Coffee",
-      image: "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=3742&auto=format&fit=crop",
-      likes: 120,
-    },
-    {
-      id: 3,
-      title: "Sunset Point",
-      image: "https://images.unsplash.com/photo-1614531341773-01c51cbce8dc?q=80&w=3774&auto=format&fit=crop",
-      likes: 89,
-    },
-    {
-      id: 4,
-      title: "Old Library",
-      image: "https://images.unsplash.com/photo-1568667256549-094345857637?q=80&w=3415&auto=format&fit=crop",
-      likes: 210,
-    },
-  ];
+  const myposts = user.posts || [];
 
   return (
     <div className="min-h-screen w-full bg-slate-900 pb-20">
@@ -331,22 +306,22 @@ export default function ProfileView({ isMine, userId }) {
       {/* Content Tabs */}
       <div className="mt-6 px-6">
         <div className="mb-6 flex gap-6 border-b border-slate-800">
-          <button className="border-b-2 border-blue-500 pb-3 font-medium text-blue-400">Posts</button>
+          <button className="border-b-2 border-blue-500 pb-3 font-medium text-blue-400">My Posts</button>
         </div>
 
         {/* Grid Gallery */}
         <div className="grid grid-cols-2 gap-4">
           {myposts.map((post) => (
-            <div key={post.id} className="aspect-3/4 group relative overflow-hidden rounded-xl bg-slate-800">
+            <div key={post._id} className="aspect-3/4 group relative overflow-hidden rounded-xl bg-slate-800">
               <Image
                 src={post.image}
-                alt={post.title}
+                alt={post.description || "Local Gem"}
                 fill
                 className="object-cover transition-transform group-hover:scale-105"
               />
               <div className="bg-linear-to-t absolute inset-0 from-black/80 via-transparent to-transparent opacity-90" />
               <div className="absolute bottom-3 left-3 right-3">
-                <h3 className="truncate text-sm font-bold text-white">{post.title}</h3>
+                <h3 className="truncate text-sm font-bold text-white">{post.description || "Untitled Gem"}</h3>
                 <div className="mt-1 flex items-center gap-1 text-xs text-slate-300">
                   <Icon icon="mingcute:heart-line" fontSize={14} />
                   <span>{post.likes}</span>

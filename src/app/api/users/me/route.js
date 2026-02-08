@@ -17,7 +17,7 @@ export async function GET() {
   }
 
   await dbConnect();
-  const [user, userData, postsCount, likesResult] = await Promise.all([
+  const [user, userData, postsCount, likesResult, userPosts] = await Promise.all([
     User.findCached(session.user.id),
     UserData.findById(session.user.id),
     Post.countDocuments({ createdBy: session.user.id }),
@@ -25,6 +25,7 @@ export async function GET() {
       { $match: { createdBy: new mongoose.Types.ObjectId(session.user.id) } },
       { $group: { _id: null, totalLikes: { $sum: "$likes" } } },
     ]),
+    Post.find({ createdBy: session.user.id }).sort({ createdAt: -1 }).limit(20),
   ]);
 
   if (!user) {
@@ -41,6 +42,7 @@ export async function GET() {
     bio: userData?.bio || "",
     pfp: userData?.pfp || "person",
     stats,
+    posts: userPosts,
   };
 
   return NextResponse.json(mergedUser);

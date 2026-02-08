@@ -15,7 +15,7 @@ export async function GET(req, { params }) {
   await dbConnect();
 
   try {
-    const [user, userData, postsCount, likesResult] = await Promise.all([
+    const [user, userData, postsCount, likesResult, userPosts] = await Promise.all([
       User.findCached(id),
       UserData.findById(id),
       Post.countDocuments({ createdBy: id }),
@@ -23,6 +23,7 @@ export async function GET(req, { params }) {
         { $match: { createdBy: new mongoose.Types.ObjectId(id) } },
         { $group: { _id: null, totalLikes: { $sum: "$likes" } } },
       ]),
+      Post.find({ createdBy: id }).sort({ createdAt: -1 }).limit(20),
     ]);
 
     if (!user) {
@@ -41,6 +42,7 @@ export async function GET(req, { params }) {
       pfp: userData?.pfp || "person",
       image: user.image,
       stats,
+      posts: userPosts,
     };
 
     return NextResponse.json(publicProfile);
