@@ -297,7 +297,7 @@ export default function ProfileView({ isMine, userId }) {
         <div className="mt-6 flex gap-6 border-y border-slate-800 py-4">
           <div className="flex flex-col">
             <span className="text-2xl font-bold text-white">{stats.posts}</span>
-            <span className="text-xs uppercase tracking-wider text-slate-400">Posts</span>
+            <span className="text-xs uppercase tracking-wider text-slate-400">Gems</span>
           </div>
           <div className="flex flex-col">
             <span className="text-2xl font-bold text-white">{stats.likes}</span>
@@ -308,9 +308,7 @@ export default function ProfileView({ isMine, userId }) {
 
       {/* Content Tabs */}
       <div className="mt-6 px-6">
-        <div className="mb-6 flex gap-6 border-b border-slate-800">
-          <button className="border-b-2 border-blue-500 pb-3 font-medium text-blue-400">My Posts</button>
-        </div>
+        <p className="mb-4 text-2xl font-bold text-white">Gems</p>
 
         {/* Grid Gallery */}
         <div className="grid grid-cols-2 gap-4">
