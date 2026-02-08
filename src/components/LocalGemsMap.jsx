@@ -164,76 +164,94 @@ export default function LocalGemsMap({ initialGemId }) {
         </div>
       </div>
 
-      {/* Settings modal */}
-      {settingsOpen && (
-        <div className="z-2000 absolute inset-0 bg-black/30 p-4">
-          <div className="mx-auto mt-20 w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
-            <div className="flex items-center justify-between">
-              <div className="text-lg font-semibold text-gray-900">Settings</div>
-              <button onClick={() => setSettingsOpen(false)} className="rounded-full p-2 hover:bg-gray-100">
-                ✕
-              </button>
-            </div>
-            <div className="mt-4">
-              <div className="text-sm font-medium text-gray-900">Map Style</div>
+      {/* Settings BottomSheet */}
+      <BottomSheet open={settingsOpen} onClose={() => setSettingsOpen(false)}>
+        <div className="flex h-full flex-col overflow-hidden bg-slate-900 p-6 text-white">
+          <div className="flex items-center justify-between pb-4">
+            <h2 className="text-xl font-bold">Settings</h2>
+            <button
+              onClick={() => setSettingsOpen(false)}
+              className="rounded-full bg-slate-800 p-2 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
+            >
+              <Icon icon="mingcute:close-line" fontSize={24} />
+            </button>
+          </div>
 
-              <div className="mt-2 grid grid-cols-2 gap-2">
+          <div className="flex-1 space-y-8 overflow-y-auto py-4">
+            {/* Map Style */}
+            <section>
+              <div className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
+                <Icon icon="mingcute:layers-line" fontSize={18} />
+                Map Style
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setMapStyle("standard")}
-                  className={
-                    "rounded-xl px-3 py-2 text-sm font-medium ring-1 transition " +
-                    (mapStyle === "standard"
-                      ? "bg-slate-900 text-white ring-slate-900"
-                      : "bg-white text-slate-900 ring-gray-200 hover:bg-gray-50")
-                  }
+                  className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all ${
+                    mapStyle === "standard"
+                      ? "border-blue-500 bg-blue-500/10 text-blue-400"
+                      : "border-slate-800 bg-slate-800/50 text-slate-400 hover:border-slate-700 hover:bg-slate-800"
+                  }`}
                 >
-                  Standard
+                  <Icon icon="mingcute:map-2-line" fontSize={32} />
+                  <span className="text-sm font-medium">Standard</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setMapStyle("satellite")}
-                  className={
-                    "rounded-xl px-3 py-2 text-sm font-medium ring-1 transition " +
-                    (mapStyle === "satellite"
-                      ? "bg-slate-900 text-white ring-slate-900"
-                      : "bg-white text-slate-900 ring-gray-200 hover:bg-gray-50")
-                  }
+                  className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all ${
+                    mapStyle === "satellite"
+                      ? "border-blue-500 bg-blue-500/10 text-blue-400"
+                      : "border-slate-800 bg-slate-800/50 text-slate-400 hover:border-slate-700 hover:bg-slate-800"
+                  }`}
                 >
-                  Satellite
+                  <Icon icon="mingcute:earth-line" fontSize={32} />
+                  <span className="text-sm font-medium">Satellite</span>
                 </button>
               </div>
-            </div>
-            <div className="mt-4">
-              <div className="text-sm font-medium text-gray-900">Detection Range</div>
-              <div className="mt-1 text-sm text-gray-500">{metersLabel(rangeMeters)}</div>
+            </section>
 
-              <input
-                className="mt-4 w-full"
-                type="range"
-                min={100}
-                max={10000}
-                step={100}
-                value={rangeMeters}
-                onChange={(e) => setRangeMeters(Number(e.target.value))}
-              />
-
-              <div className="mt-2 flex justify-between text-xs text-gray-500">
-                <span>100m</span>
-                <span>10km</span>
+            {/* Detection Range */}
+            <section>
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
+                  <Icon icon="mingcute:radar-line" fontSize={18} />
+                  Detection Range
+                </div>
+                <span className="rounded-full bg-blue-500/10 px-3 py-1 text-sm font-bold text-blue-400 ring-1 ring-blue-500/20">
+                  {metersLabel(rangeMeters)}
+                </span>
               </div>
-            </div>
 
-            <button
-              onClick={() => setSettingsOpen(false)}
-              className="mt-5 w-full rounded-xl bg-gray-900 py-2.5 text-sm font-medium text-white hover:bg-black"
-            >
-              Done
-            </button>
+              <div className="px-2">
+                <input
+                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-800 accent-blue-500"
+                  type="range"
+                  min={100}
+                  max={10000}
+                  step={100}
+                  value={rangeMeters}
+                  onChange={(e) => setRangeMeters(Number(e.target.value))}
+                />
+                <div className="mt-4 flex justify-between text-xs font-medium text-slate-500">
+                  <span>100m</span>
+                  <span>5km</span>
+                  <span>10km</span>
+                </div>
+              </div>
+            </section>
           </div>
+
+          <button
+            onClick={() => setSettingsOpen(false)}
+            className="mt-6 w-full rounded-2xl bg-blue-500 py-4 text-lg font-bold text-white shadow-lg shadow-blue-500/20 transition-transform hover:bg-blue-600 active:scale-[0.98]"
+          >
+            Done
+          </button>
         </div>
-      )}
+      </BottomSheet>
 
       {/* Internal Bottom Sheet for Direct Route /gem/[id] */}
       <BottomSheet
