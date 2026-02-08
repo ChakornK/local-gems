@@ -35,7 +35,7 @@ export default function BottomNav() {
               if (item.primary) {
                 return (
                   <Link key={item.label} href={item.href} className="group relative -top-4 flex flex-col items-center">
-                    <div className="rounded-full border-4 border-slate-900 bg-blue-500 p-4 shadow-lg shadow-blue-500/20 transition-transform group-active:scale-95">
+                    <div className="rounded-full bg-blue-500 p-4 shadow-lg shadow-blue-500/20 transition-transform group-active:scale-95">
                       <Icon icon={`mingcute:${item.icon}-fill`} className="h-7 w-7 text-white" />
                     </div>
                   </Link>
