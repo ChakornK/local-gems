@@ -175,7 +175,7 @@ export default function LocalGemsMap() {
           ) : (
             <TileLayer
               attribution="&copy; OpenStreetMap contributors"
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              url="https://tile.jawg.io/03a4a9f9-9307-4a1d-ac35-fda25ea3559f/{z}/{x}/{y}{r}.png?access-token=JpJbH2xN72Dan8bpThb5RwJCZMEvPzCDfrU0IVidSDRUQ4zLRB9ryTvIZEliu0Cu"
             />
           )}
 
