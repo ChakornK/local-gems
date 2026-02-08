@@ -157,10 +157,9 @@ export default function ProfileView({ isMine, userId }) {
 
   const user = userData;
 
-  // Mock Stats for now, as they are not in the User model yet
-  const stats = {
-    signs: 4,
-    likes: 843,
+  const stats = user.stats || {
+    posts: 0,
+    likes: 0,
   };
 
   const myposts = [
@@ -319,8 +318,8 @@ export default function ProfileView({ isMine, userId }) {
         {/* Stats Row */}
         <div className="mt-6 flex gap-6 border-y border-slate-800 py-4">
           <div className="flex flex-col">
-            <span className="text-2xl font-bold text-white">{stats.signs}</span>
-            <span className="text-xs uppercase tracking-wider text-slate-400">Signs</span>
+            <span className="text-2xl font-bold text-white">{stats.posts}</span>
+            <span className="text-xs uppercase tracking-wider text-slate-400">Posts</span>
           </div>
           <div className="flex flex-col">
             <span className="text-2xl font-bold text-white">{stats.likes}</span>
@@ -332,7 +331,7 @@ export default function ProfileView({ isMine, userId }) {
       {/* Content Tabs */}
       <div className="mt-6 px-6">
         <div className="mb-6 flex gap-6 border-b border-slate-800">
-          <button className="border-b-2 border-blue-500 pb-3 font-medium text-blue-400">My Signs</button>
+          <button className="border-b-2 border-blue-500 pb-3 font-medium text-blue-400">Posts</button>
         </div>
 
         {/* Grid Gallery */}

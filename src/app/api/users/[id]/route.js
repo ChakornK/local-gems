@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import UserData from "@/models/UserData";
+import Post from "@/models/Post";
+import mongoose from "mongoose";
 
 export async function GET(req, { params }) {
   const { id } = await params;
@@ -13,11 +15,24 @@ export async function GET(req, { params }) {
   await dbConnect();
 
   try {
-    const [user, userData] = await Promise.all([User.findCached(id), UserData.findById(id)]);
+    const [user, userData, postsCount, likesResult] = await Promise.all([
+      User.findCached(id),
+      UserData.findById(id),
+      Post.countDocuments({ createdBy: id }),
+      Post.aggregate([
+        { $match: { createdBy: new mongoose.Types.ObjectId(id) } },
+        { $group: { _id: null, totalLikes: { $sum: "$likes" } } },
+      ]),
+    ]);
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+
+    const stats = {
+      posts: postsCount,
+      likes: likesResult[0]?.totalLikes || 0,
+    };
 
     const publicProfile = {
       _id: user._id,
@@ -25,6 +40,7 @@ export async function GET(req, { params }) {
       bio: userData?.bio || "",
       pfp: userData?.pfp || "person",
       image: user.image,
+      stats,
     };
 
     return NextResponse.json(publicProfile);

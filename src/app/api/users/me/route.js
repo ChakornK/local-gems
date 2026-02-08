@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import UserData from "@/models/UserData";
+import Post from "@/models/Post";
+import mongoose from "mongoose";
 
 export async function GET() {
   const session = await auth.api.getSession({
@@ -15,16 +17,30 @@ export async function GET() {
   }
 
   await dbConnect();
-  const [user, userData] = await Promise.all([User.findCached(session.user.id), UserData.findById(session.user.id)]);
+  const [user, userData, postsCount, likesResult] = await Promise.all([
+    User.findCached(session.user.id),
+    UserData.findById(session.user.id),
+    Post.countDocuments({ createdBy: session.user.id }),
+    Post.aggregate([
+      { $match: { createdBy: new mongoose.Types.ObjectId(session.user.id) } },
+      { $group: { _id: null, totalLikes: { $sum: "$likes" } } },
+    ]),
+  ]);
 
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
+  const stats = {
+    posts: postsCount,
+    likes: likesResult[0]?.totalLikes || 0,
+  };
+
   const mergedUser = {
     ...user.toObject(),
     bio: userData?.bio || "",
     pfp: userData?.pfp || "person",
+    stats,
   };
 
   return NextResponse.json(mergedUser);
